@@ -598,12 +598,33 @@ with st.sidebar:
         
         st.markdown("")
         with st.expander("⚠️ Reset Everything"):
-            st.caption("This clears all your settings and starts over.")
-            if st.button("🗑️ Yes, Reset Everything", use_container_width=True):
-                localS.deleteAll()
-                st.session_state['config'] = get_default_config()
-                st.session_state['config_source'] = 'default'
-                st.rerun()
+            st.caption("This will permanently delete all your settings, bills, accounts, and due dates from this browser.")
+            if 'confirm_reset' not in st.session_state:
+                st.session_state['confirm_reset'] = False
+            
+            if not st.session_state['confirm_reset']:
+                if st.button("🗑️ Reset Everything", use_container_width=True):
+                    st.session_state['confirm_reset'] = True
+                    st.rerun()
+            else:
+                st.warning("⚠️ **Are you sure?** All your data will be lost. Download your settings first if you want to keep them.")
+                col_yes, col_no = st.columns(2)
+                with col_yes:
+                    if st.button("Yes, delete everything", use_container_width=True, type="primary"):
+                        localS.deleteAll()
+                        st.session_state['config'] = get_default_config()
+                        st.session_state['config_source'] = 'default'
+                        st.session_state['confirm_reset'] = False
+                        st.session_state['reset_success'] = True
+                        st.rerun()
+                with col_no:
+                    if st.button("Cancel", use_container_width=True):
+                        st.session_state['confirm_reset'] = False
+                        st.rerun()
+            
+            if st.session_state.get('reset_success'):
+                st.success("✅ All settings have been reset to defaults.")
+                st.session_state['reset_success'] = False
 
 
 # ========================
