@@ -307,7 +307,7 @@ def make_budget_gauge(used_pct):
 # ========================
 # PAGE CONFIG + CSS
 # ========================
-st.set_page_config(page_title="Family Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Family Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="auto")
 
 st.markdown("""
 <style>
@@ -877,8 +877,31 @@ def main():
     # === FOOTER ===
     st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly</div>', unsafe_allow_html=True)
     
-    # Floating settings hint (visible when sidebar is closed)
-    st.markdown('<div class="settings-hint">⚙️ <span>Click the arrow (top left)</span> to open Settings</div>', unsafe_allow_html=True)
+    # Floating settings button that opens sidebar via JS
+    import streamlit.components.v1 as components
+    components.html("""
+    <style>
+        .settings-fab {
+            position: fixed; bottom: 24px; right: 24px; z-index: 99999;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white; border: none; border-radius: 16px;
+            padding: 14px 22px; font-size: 15px; font-weight: 700;
+            cursor: pointer; box-shadow: 0 6px 24px rgba(37,99,235,0.5);
+            font-family: 'Inter', -apple-system, sans-serif;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .settings-fab:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(37,99,235,0.7); }
+    </style>
+    <button class="settings-fab" onclick="
+        const btn = window.parent.document.querySelector('[data-testid=&quot;collapsedControl&quot;]');
+        if (btn) { btn.click(); }
+        else {
+            const sidebar = window.parent.document.querySelector('section[data-testid=&quot;stSidebar&quot;]');
+            if (sidebar) { sidebar.setAttribute('aria-expanded', 'true'); }
+        }
+    ">⚙️ Settings</button>
+    """, height=80)
 
 
 if __name__ == '__main__':
