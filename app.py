@@ -468,7 +468,13 @@ with st.sidebar:
                         st.session_state['open_expense_cat'] = cat_name
                         st.rerun()
                 
-                cfg['fixed_expenses'][cat_name] = updated_items
+                st.markdown("---")
+                if st.button(f"🗑️ Delete entire {cat_name} category", key=f"del_cat_{cat_name}", use_container_width=True):
+                    del cfg['fixed_expenses'][cat_name]
+                    st.session_state['open_expense_cat'] = None
+                    st.rerun()
+                else:
+                    cfg['fixed_expenses'][cat_name] = updated_items
         
         with st.expander("➕ Add a new category"):
             new_cat = st.text_input("Category name", placeholder="e.g. Medical, Childcare")
