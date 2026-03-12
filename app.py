@@ -779,8 +779,11 @@ def main():
     
     # Dynamic page title
     import streamlit.components.v1 as components
-    page_title = FAMILY_NAME if is_my_budget else "Demo Budget Dashboard"
-    components.html(f"<script>parent.document.title = '{page_title}';</script>", height=0)
+    page_title = FAMILY_NAME.replace("'", "\\'") if is_my_budget else "Demo Budget Dashboard"
+    components.html(f"""<script>
+        try {{ parent.document.title = '{page_title}'; }} catch(e) {{}}
+        setInterval(function() {{ try {{ parent.document.title = '{page_title}'; }} catch(e) {{}} }}, 500);
+    </script>""", height=0)
     
     st.markdown(f'<div class="{badge_class}"><span>{badge_text}</span></div>', unsafe_allow_html=True)
     st.markdown(f'<div class="dashboard-title">💰 {FAMILY_NAME}</div>', unsafe_allow_html=True)
