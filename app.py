@@ -321,10 +321,10 @@ st.markdown("""
     .kpi-card:hover { transform: translateY(-2px); }
     .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; color: #64748b; }
     .kpi-value { font-size: 38px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
-    .kpi-sub { font-size: 11px; color: #475569; line-height: 1.3; }
+    .kpi-sub { font-size: 11px; color: #64748b; line-height: 1.3; }
     .green { color: #34d399; } .red { color: #fb7185; } .blue { color: #60a5fa; }
     .yellow { color: #fbbf24; } .orange { color: #fb923c; } .purple { color: #a78bfa; } .teal { color: #2dd4bf; }
-    .section-header { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #475569; margin: 36px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid rgba(71,85,105,0.3); }
+    .section-header { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #64748b; margin: 36px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid rgba(71,85,105,0.3); }
     .progress-container { background: rgba(15,23,42,0.6); border-radius: 14px; padding: 18px 22px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.04); }
     .progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
     .progress-name { font-size: 14px; font-weight: 600; color: #cbd5e1; }
@@ -332,7 +332,7 @@ st.markdown("""
     .progress-bar-track { background: rgba(255,255,255,0.06); border-radius: 6px; height: 10px; overflow: hidden; }
     .progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
     .dashboard-title { text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #94a3b8; margin: 8px 0 2px 0; text-transform: uppercase; }
-    .dashboard-subtitle { text-align: center; font-size: 12px; color: #334155; margin-bottom: 28px; letter-spacing: 1px; }
+    .dashboard-subtitle { text-align: center; font-size: 12px; color: #64748b; margin-bottom: 28px; letter-spacing: 1px; }
     .demo-badge { text-align: center; margin-bottom: 8px; }
     .demo-badge span { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 16px; border-radius: 20px; }
     .csv-badge { text-align: center; margin-bottom: 8px; }
