@@ -389,7 +389,10 @@ LIGHT_THEME = {
 }
 
 theme = DARK_THEME if is_dark else LIGHT_THEME
-st.markdown(BASE_CSS.format(**theme), unsafe_allow_html=True)
+css = BASE_CSS
+for k, v in theme.items():
+    css = css.replace('{' + k + '}', v)
+st.markdown(css, unsafe_allow_html=True)
 
 
 # ========================
