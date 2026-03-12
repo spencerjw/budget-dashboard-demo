@@ -346,26 +346,6 @@ st.markdown("""
     .streamlit-expanderHeader, .streamlit-expanderHeader p, [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 13px !important; }
     [data-testid="stExpander"] summary p { margin: 0 !important; }
     [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
-    /* Make sidebar toggle arrow visible when collapsed */
-    [data-testid="collapsedControl"] {
-        background: rgba(30,41,59,0.9) !important;
-        border: 1px solid rgba(96,165,250,0.3) !important;
-        border-radius: 0 12px 12px 0 !important;
-        padding: 12px 8px !important;
-        color: #60a5fa !important;
-    }
-    [data-testid="collapsedControl"] svg { fill: #60a5fa !important; width: 24px !important; height: 24px !important; }
-    [data-testid="collapsedControl"]:hover { background: rgba(30,41,59,1) !important; border-color: #60a5fa !important; }
-    
-    .settings-hint {
-        position: fixed; bottom: 20px; right: 20px; z-index: 999;
-        background: linear-gradient(135deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.95) 100%);
-        border: 1px solid rgba(96,165,250,0.3); border-radius: 14px;
-        padding: 10px 18px; font-size: 13px; color: #94a3b8;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5); cursor: default;
-        backdrop-filter: blur(10px);
-    }
-    .settings-hint span { color: #60a5fa; font-weight: 600; }
     
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
@@ -685,6 +665,19 @@ def get_credit_accounts(accounts):
 # MAIN DASHBOARD
 # ========================
 def main():
+    # Settings hint at top right
+    hint_left, hint_right = st.columns([5, 1])
+    with hint_right:
+        st.markdown("""
+        <div style="text-align:right;padding:4px 0;">
+            <span style="background:rgba(30,41,59,0.8);border:1px solid rgba(96,165,250,0.3);
+                border-radius:10px;padding:6px 14px;font-size:12px;color:#60a5fa;font-weight:600;
+                letter-spacing:0.5px;">
+                ◀ Settings
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.markdown(f'<div class="{badge_class}"><span>{badge_text}</span></div>', unsafe_allow_html=True)
     st.markdown(f'<div class="dashboard-title">💰 {FAMILY_NAME} Family Budget</div>', unsafe_allow_html=True)
     
@@ -877,31 +870,7 @@ def main():
     # === FOOTER ===
     st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly</div>', unsafe_allow_html=True)
     
-    # Floating settings button that opens sidebar via JS
-    import streamlit.components.v1 as components
-    components.html("""
-    <style>
-        .settings-fab {
-            position: fixed; bottom: 24px; right: 24px; z-index: 99999;
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white; border: none; border-radius: 16px;
-            padding: 14px 22px; font-size: 15px; font-weight: 700;
-            cursor: pointer; box-shadow: 0 6px 24px rgba(37,99,235,0.5);
-            font-family: 'Inter', -apple-system, sans-serif;
-            transition: all 0.2s ease;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .settings-fab:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(37,99,235,0.7); }
-    </style>
-    <button class="settings-fab" onclick="
-        const btn = window.parent.document.querySelector('[data-testid=&quot;collapsedControl&quot;]');
-        if (btn) { btn.click(); }
-        else {
-            const sidebar = window.parent.document.querySelector('section[data-testid=&quot;stSidebar&quot;]');
-            if (sidebar) { sidebar.setAttribute('aria-expanded', 'true'); }
-        }
-    ">⚙️ Settings</button>
-    """, height=80)
+
 
 
 if __name__ == '__main__':
