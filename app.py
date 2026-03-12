@@ -354,6 +354,15 @@ BASE_CSS = """
     .streamlit-expanderHeader, .streamlit-expanderHeader p, [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 13px !important; }
     [data-testid="stExpander"] summary p { margin: 0 !important; }
     [data-testid="stSidebar"] { background: {sidebar_bg}; }
+    [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stRadio label,
+    [data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span, [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4, [data-testid="stSidebar"] .stTextInput label,
+    [data-testid="stSidebar"] .stNumberInput label,
+    [data-testid="stSidebar"] .stSelectbox label { color: {sidebar_text} !important; }
+    [data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption,
+    [data-testid="stSidebar"] small { color: {sidebar_muted} !important; }
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
 """
@@ -369,6 +378,7 @@ DARK_THEME = {
     'row_bg': 'rgba(15,23,42,0.4)', 'track_bg': 'rgba(255,255,255,0.06)',
     'divider': 'rgba(71,85,105,0.3)',
     'sidebar_bg': 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+    'sidebar_text': '#e2e8f0', 'sidebar_muted': '#94a3b8',
     'green': '#34d399', 'red': '#fb7185', 'blue': '#60a5fa',
     'yellow': '#fbbf24', 'orange': '#fb923c', 'purple': '#a78bfa', 'teal': '#2dd4bf',
 }
@@ -383,7 +393,8 @@ LIGHT_THEME = {
     'card_border': 'rgba(0,0,0,0.08)',
     'row_bg': 'rgba(248,250,252,0.8)', 'track_bg': 'rgba(0,0,0,0.06)',
     'divider': 'rgba(0,0,0,0.1)',
-    'sidebar_bg': 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+    'sidebar_bg': 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
+    'sidebar_text': '#1e293b', 'sidebar_muted': '#64748b',
     'green': '#059669', 'red': '#e11d48', 'blue': '#2563eb',
     'yellow': '#d97706', 'orange': '#ea580c', 'purple': '#7c3aed', 'teal': '#0d9488',
 }
@@ -409,13 +420,10 @@ with st.sidebar:
     st.markdown("## ⚙️ Setup")
     
     # === THEME ===
-    theme_col1, theme_col2 = st.columns(2)
-    with theme_col1:
-        if st.button("🌙 Dark" if not is_dark else "☀️ Light", use_container_width=True):
-            st.session_state['theme'] = 'light' if is_dark else 'dark'
-            st.rerun()
-    with theme_col2:
-        st.caption("Dark" if is_dark else "Light")
+    theme_label = "☀️ Switch to Light" if is_dark else "🌙 Switch to Dark"
+    if st.button(theme_label, use_container_width=True):
+        st.session_state['theme'] = 'light' if is_dark else 'dark'
+        st.rerun()
     
     # === MODE ===
     data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0)
