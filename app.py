@@ -309,49 +309,87 @@ def make_budget_gauge(used_pct):
 # ========================
 st.set_page_config(page_title="Family Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="expanded")
 
-st.markdown("""
+# Theme selection (stored in session state)
+if 'theme' not in st.session_state:
+    st.session_state['theme'] = 'dark'
+
+is_dark = st.session_state['theme'] == 'dark'
+
+# Base CSS (shared)
+BASE_CSS = """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    .stApp { background: linear-gradient(160deg, #0a0e1a 0%, #111827 40%, #0f172a 100%); color: #e2e8f0; font-family: 'Inter', sans-serif; }
     #MainMenu, footer {visibility: hidden;}
-    [data-testid="stHeader"] { background: rgba(10,14,26,0.95) !important; }
-    .block-container { padding-top: 3.5rem !important; }
-    .block-container { padding-top: 1.5rem; max-width: 1200px; }
-    .kpi-card { background: linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%); border-radius: 20px; padding: 28px 20px; text-align: center; box-shadow: 0 4px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(10px); margin-bottom: 12px; transition: transform 0.2s ease; }
+    [data-testid="stHeader"] { background: {header_bg} !important; }
+    .block-container { padding-top: 3.5rem !important; max-width: 1200px; }
+    .stApp { background: {app_bg}; color: {text_primary}; font-family: 'Inter', sans-serif; }
+    .kpi-card { background: {card_bg}; border-radius: 20px; padding: 28px 20px; text-align: center; box-shadow: {card_shadow}; border: 1px solid {card_border}; backdrop-filter: blur(10px); margin-bottom: 12px; transition: transform 0.2s ease; }
     .kpi-card:hover { transform: translateY(-2px); }
-    .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; color: #64748b; }
+    .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; color: {text_muted}; }
     .kpi-value { font-size: 38px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
-    .kpi-sub { font-size: 11px; color: #64748b; line-height: 1.3; }
-    .green { color: #34d399; } .red { color: #fb7185; } .blue { color: #60a5fa; }
-    .yellow { color: #fbbf24; } .orange { color: #fb923c; } .purple { color: #a78bfa; } .teal { color: #2dd4bf; }
-    .section-header { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #64748b; margin: 36px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid rgba(71,85,105,0.3); }
-    .progress-container { background: rgba(15,23,42,0.6); border-radius: 14px; padding: 18px 22px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.04); }
+    .kpi-sub { font-size: 11px; color: {text_muted}; line-height: 1.3; }
+    .green { color: {green}; } .red { color: {red}; } .blue { color: {blue}; }
+    .yellow { color: {yellow}; } .orange { color: {orange}; } .purple { color: {purple}; } .teal { color: {teal}; }
+    .section-header { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: {text_muted}; margin: 36px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid {divider}; }
+    .progress-container { background: {row_bg}; border-radius: 14px; padding: 18px 22px; margin-bottom: 10px; border: 1px solid {card_border}; }
     .progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-    .progress-name { font-size: 14px; font-weight: 600; color: #cbd5e1; }
+    .progress-name { font-size: 14px; font-weight: 600; color: {text_secondary}; }
     .progress-stats { font-size: 13px; font-weight: 600; }
-    .progress-bar-track { background: rgba(255,255,255,0.06); border-radius: 6px; height: 10px; overflow: hidden; }
+    .progress-bar-track { background: {track_bg}; border-radius: 6px; height: 10px; overflow: hidden; }
     .progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-    .dashboard-title { text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #94a3b8; margin: 8px 0 2px 0; text-transform: uppercase; }
-    .dashboard-subtitle { text-align: center; font-size: 12px; color: #64748b; margin-bottom: 28px; letter-spacing: 1px; }
+    .dashboard-title { text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 3px; color: {title_color}; margin: 8px 0 2px 0; text-transform: uppercase; }
+    .dashboard-subtitle { text-align: center; font-size: 12px; color: {text_muted}; margin-bottom: 28px; letter-spacing: 1px; }
     .demo-badge { text-align: center; margin-bottom: 8px; }
     .demo-badge span { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 16px; border-radius: 20px; }
     .csv-badge { text-align: center; margin-bottom: 8px; }
     .csv-badge span { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 16px; border-radius: 20px; }
     .custom-badge { text-align: center; margin-bottom: 8px; }
     .custom-badge span { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); color: #000; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 16px; border-radius: 20px; }
-    .due-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-radius: 10px; margin-bottom: 6px; font-size: 13px; background: rgba(15,23,42,0.4); border: 1px solid rgba(255,255,255,0.03); }
-    .due-name { color: #94a3b8; font-weight: 500; } .due-date { font-weight: 600; }
+    .due-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-radius: 10px; margin-bottom: 6px; font-size: 13px; background: {row_bg}; border: 1px solid {card_border}; }
+    .due-name { color: {text_secondary}; font-weight: 500; } .due-date { font-weight: 600; }
     .tx-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; }
-    .tx-table th { text-align: left; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 8px 12px; }
-    .tx-table td { padding: 10px 12px; font-size: 13px; color: #cbd5e1; background: rgba(15,23,42,0.4); }
+    .tx-table th { text-align: left; font-size: 11px; font-weight: 700; color: {text_muted}; text-transform: uppercase; letter-spacing: 1.5px; padding: 8px 12px; }
+    .tx-table td { padding: 10px 12px; font-size: 13px; color: {text_secondary}; background: {row_bg}; }
     .tx-table tr td:first-child { border-radius: 8px 0 0 8px; } .tx-table tr td:last-child { border-radius: 0 8px 8px 0; }
     .streamlit-expanderHeader, .streamlit-expanderHeader p, [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 13px !important; }
     [data-testid="stExpander"] summary p { margin: 0 !important; }
-    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
-    
+    [data-testid="stSidebar"] { background: {sidebar_bg}; }
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
-""", unsafe_allow_html=True)
+"""
+
+DARK_THEME = {
+    'header_bg': 'rgba(10,14,26,0.95)',
+    'app_bg': 'linear-gradient(160deg, #0a0e1a 0%, #111827 40%, #0f172a 100%)',
+    'text_primary': '#e2e8f0', 'text_secondary': '#cbd5e1', 'text_muted': '#64748b',
+    'title_color': '#94a3b8',
+    'card_bg': 'linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%)',
+    'card_shadow': '0 4px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+    'card_border': 'rgba(255,255,255,0.06)',
+    'row_bg': 'rgba(15,23,42,0.4)', 'track_bg': 'rgba(255,255,255,0.06)',
+    'divider': 'rgba(71,85,105,0.3)',
+    'sidebar_bg': 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+    'green': '#34d399', 'red': '#fb7185', 'blue': '#60a5fa',
+    'yellow': '#fbbf24', 'orange': '#fb923c', 'purple': '#a78bfa', 'teal': '#2dd4bf',
+}
+
+LIGHT_THEME = {
+    'header_bg': 'rgba(255,255,255,0.95)',
+    'app_bg': 'linear-gradient(160deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%)',
+    'text_primary': '#1e293b', 'text_secondary': '#334155', 'text_muted': '#64748b',
+    'title_color': '#1e293b',
+    'card_bg': 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.95) 100%)',
+    'card_shadow': '0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
+    'card_border': 'rgba(0,0,0,0.08)',
+    'row_bg': 'rgba(248,250,252,0.8)', 'track_bg': 'rgba(0,0,0,0.06)',
+    'divider': 'rgba(0,0,0,0.1)',
+    'sidebar_bg': 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+    'green': '#059669', 'red': '#e11d48', 'blue': '#2563eb',
+    'yellow': '#d97706', 'orange': '#ea580c', 'purple': '#7c3aed', 'teal': '#0d9488',
+}
+
+theme = DARK_THEME if is_dark else LIGHT_THEME
+st.markdown(BASE_CSS.format(**theme), unsafe_allow_html=True)
 
 
 # ========================
@@ -366,6 +404,15 @@ init_session_config(localS)
 # ========================
 with st.sidebar:
     st.markdown("## ⚙️ Setup")
+    
+    # === THEME ===
+    theme_col1, theme_col2 = st.columns(2)
+    with theme_col1:
+        if st.button("🌙 Dark" if not is_dark else "☀️ Light", use_container_width=True):
+            st.session_state['theme'] = 'light' if is_dark else 'dark'
+            st.rerun()
+    with theme_col2:
+        st.caption("Dark" if is_dark else "Light")
     
     # === MODE ===
     data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0)
