@@ -531,7 +531,7 @@ with st.sidebar:
         
         # === DUE DATES ===
         st.markdown("### 📅 Bill Due Dates")
-        st.caption("Day of month each bill is due.")
+        st.caption("Add bills that aren't credit cards or loans (those due dates are set above). Enter the day of the month each is due -- e.g. rent on the 1st, electric on the 15th. Shows up in the Upcoming Bills section of your dashboard.")
         
         updated_dues = {}
         for bill_name, day in list(cfg['due_dates'].items()):
