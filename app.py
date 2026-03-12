@@ -420,15 +420,14 @@ with st.sidebar:
                         updated_items[new_name.strip()] = new_amount
                 
                 st.markdown("---")
-                nc1, nc2, nc3 = st.columns([3, 2, 1])
+                st.caption("Add a bill:")
+                nc1, nc2 = st.columns([3, 2])
                 with nc1:
-                    new_bill_name = st.text_input("New bill name", key=f"new_name_{cat_name}", placeholder="e.g. Netflix", label_visibility="collapsed")
+                    new_bill_name = st.text_input("Name", key=f"new_name_{cat_name}", placeholder="e.g. Netflix", label_visibility="collapsed")
                 with nc2:
                     new_bill_amount = st.number_input("$", value=0, step=5, min_value=0, key=f"new_amt_{cat_name}", label_visibility="collapsed")
-                with nc3:
-                    add_bill = st.button("➕", key=f"add_{cat_name}", help="Add this bill")
                 
-                if add_bill and new_bill_name.strip() and new_bill_amount > 0:
+                if new_bill_name.strip() and new_bill_amount > 0:
                     updated_items[new_bill_name.strip()] = new_bill_amount
                 
                 cfg['fixed_expenses'][cat_name] = updated_items
@@ -545,14 +544,15 @@ with st.sidebar:
             if not del_due:
                 updated_dues[bill_name] = new_day
         
-        nc1, nc2, nc3 = st.columns([3, 1, 1])
+        st.caption("Add a due date:")
+        nc1, nc2 = st.columns([3, 1])
         with nc1:
-            new_due_name = st.text_input("Bill", key="new_due_name", placeholder="e.g. Rent", label_visibility="collapsed")
+            new_due_name = st.text_input("Bill name", key="new_due_name", placeholder="e.g. Rent", label_visibility="collapsed")
         with nc2:
             new_due_day = st.number_input("Day", value=1, min_value=1, max_value=31, key="new_due_day", label_visibility="collapsed")
-        with nc3:
-            if st.button("➕", key="add_due") and new_due_name.strip():
-                updated_dues[new_due_name.strip()] = new_due_day
+        
+        if new_due_name.strip():
+            updated_dues[new_due_name.strip()] = new_due_day
         
         cfg['due_dates'] = updated_dues
         
