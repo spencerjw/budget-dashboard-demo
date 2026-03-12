@@ -370,7 +370,7 @@ with st.sidebar:
     is_my_budget = data_mode == "💰 My Budget"
     
     if not is_my_budget:
-        st.caption("Switch to **My Budget** to enter your own data.")
+        st.caption("You're viewing a fake family's budget with sample transactions. Switch to **My Budget** to enter your own.")
     
     # === CSV UPLOAD (top of sidebar in My Budget mode) ===
     if is_my_budget:
