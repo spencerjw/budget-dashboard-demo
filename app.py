@@ -307,15 +307,14 @@ def make_budget_gauge(used_pct):
 # ========================
 # PAGE CONFIG + CSS
 # ========================
-st.set_page_config(page_title="Family Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="auto")
+st.set_page_config(page_title="Family Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     .stApp { background: linear-gradient(160deg, #0a0e1a 0%, #111827 40%, #0f172a 100%); color: #e2e8f0; font-family: 'Inter', sans-serif; }
     #MainMenu, footer {visibility: hidden;}
-    [data-testid="stHeader"] { background: transparent !important; }
-    [data-testid="stToolbar"] { visibility: hidden; }
+    [data-testid="stHeader"] { background: rgba(10,14,26,0.95) !important; }
     .block-container { padding-top: 1.5rem; max-width: 1200px; }
     .kpi-card { background: linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%); border-radius: 20px; padding: 28px 20px; text-align: center; box-shadow: 0 4px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(10px); margin-bottom: 12px; transition: transform 0.2s ease; }
     .kpi-card:hover { transform: translateY(-2px); }
@@ -667,16 +666,6 @@ def get_credit_accounts(accounts):
 # MAIN DASHBOARD
 # ========================
 def main():
-    # Settings hint at top left (where sidebar opens)
-    st.markdown("""
-    <div style="padding:2px 0 8px 0;">
-        <span style="background:rgba(30,41,59,0.8);border:1px solid rgba(96,165,250,0.3);
-            border-radius:10px;padding:8px 16px;font-size:13px;color:#60a5fa;font-weight:600;">
-            ⚙️ Click the <strong style="color:#e2e8f0;">✕</strong> or <strong style="color:#e2e8f0;">▸</strong> in the upper left to open/close Settings
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
-    
     st.markdown(f'<div class="{badge_class}"><span>{badge_text}</span></div>', unsafe_allow_html=True)
     st.markdown(f'<div class="dashboard-title">💰 {FAMILY_NAME} Family Budget</div>', unsafe_allow_html=True)
     
