@@ -426,7 +426,7 @@ with st.sidebar:
                     with col2:
                         new_amount = st.number_input("$", value=amount, step=5, min_value=0, key=f"exp_amt_{cat_name}_{item_name}", label_visibility="collapsed")
                     with col3:
-                        delete = st.button("🗑️", key=f"exp_del_{cat_name}_{item_name}", help="Remove this bill")
+                        delete = st.button("🗑️", key=f"exp_del_{cat_name}_{item_name}")
                     
                     if delete:
                         cfg['fixed_expenses'][cat_name] = {k: v for k, v in items.items() if k != item_name}
