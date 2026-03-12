@@ -367,7 +367,7 @@ with st.sidebar:
     
     # === STATUS MESSAGES ===
     if st.session_state.get('reset_success'):
-        st.success("✅ All settings have been reset to defaults.")
+        st.toast("✅ All settings have been reset to defaults.", icon="🗑️")
         st.session_state['reset_success'] = False
     
     # === MODE ===
