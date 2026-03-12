@@ -494,7 +494,7 @@ with st.sidebar:
                     format_func=lambda x: {'credit': '💳 Credit Card', 'loan': '🏦 Loan (car, student, personal, etc.)'}[x],
                     key=f"debt_type_{i}")
                 a_balance = st.number_input("Current Balance Owed ($)", value=acct['balance'], step=100, min_value=0, key=f"debt_bal_{i}",
-                    help="What you currently owe. Check your latest statement or app.")
+                    help="What you currently owe.")
                 
                 if a_type == 'credit':
                     a_limit = st.number_input("Credit Limit ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
@@ -503,9 +503,13 @@ with st.sidebar:
                     a_limit = st.number_input("Original Loan Amount ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
                         help="How much you originally borrowed.")
                 
+                a_due_day = st.number_input("Payment Due Date (day of month)", value=acct.get('due_day', 0),
+                    min_value=0, max_value=31, step=1, key=f"debt_due_{i}",
+                    help="Day of the month payment is due. 0 = no due date.")
+                
                 delete_acct = st.button("🗑️ Remove", key=f"debt_del_{i}")
                 if not delete_acct:
-                    updated_accounts.append({'name': a_name, 'type': a_type, 'balance': a_balance, 'limit': a_limit})
+                    updated_accounts.append({'name': a_name, 'type': a_type, 'balance': a_balance, 'limit': a_limit, 'due_day': a_due_day})
         
         with st.expander("➕ Add a credit card or loan"):
             nd_name = st.text_input("Account name", placeholder="e.g. Chase Visa, Car Loan", key="new_debt_name")
@@ -517,8 +521,10 @@ with st.sidebar:
                 nd_limit = st.number_input("Credit Limit ($)", value=0, step=100, min_value=0, key="new_debt_lim")
             else:
                 nd_limit = st.number_input("Original Loan Amount ($)", value=0, step=100, min_value=0, key="new_debt_lim")
+            nd_due = st.number_input("Payment Due Date (day of month)", value=0, min_value=0, max_value=31, step=1, key="new_debt_due",
+                help="0 = no due date.")
             if st.button("Add Account", key="add_debt") and nd_name.strip():
-                updated_accounts.append({'name': nd_name.strip(), 'type': nd_type, 'balance': nd_balance, 'limit': nd_limit})
+                updated_accounts.append({'name': nd_name.strip(), 'type': nd_type, 'balance': nd_balance, 'limit': nd_limit, 'due_day': nd_due})
                 st.rerun()
         
         cfg['accounts'] = updated_accounts
@@ -622,9 +628,14 @@ else:
     is_demo = False
     FIXED_EXPENSES = cfg['fixed_expenses']
     ACCOUNTS = cfg['accounts']
-    DUE_DATES = cfg['due_dates']
     FAMILY_NAME = cfg['family_name']
     MONTHLY_INCOME = cfg['monthly_income']
+    
+    # Build due dates: manual entries + auto from debt accounts with due_day set
+    DUE_DATES = dict(cfg.get('due_dates', {}))
+    for acct in ACCOUNTS:
+        if acct.get('type') in ('credit', 'loan') and acct.get('due_day', 0) > 0:
+            DUE_DATES[acct['name']] = acct['due_day']
     badge_class = "custom-badge"
     badge_text = "💰 My Budget"
     
