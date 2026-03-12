@@ -376,7 +376,7 @@ with st.sidebar:
     if is_my_budget:
         st.markdown("---")
         st.markdown("### 📄 Upload Transactions")
-        st.caption("Export CSVs from your bank(s) and drop them here. Multiple files OK.")
+        st.caption("Export CSVs from your bank(s) and drop them here. Multiple files OK. [How do I get a CSV?](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#step-6-upload-your-transactions-optional-but-recommended)")
         uploaded_files = st.file_uploader("CSV files", type=['csv'], key="csv_upload",
             accept_multiple_files=True, label_visibility="collapsed")
         if uploaded_files:
@@ -398,7 +398,7 @@ with st.sidebar:
     if is_my_budget:
         # === FIXED EXPENSES ===
         st.markdown("### 📋 Monthly Bills")
-        st.caption("Recurring bills. Not groceries or eating out.")
+        st.caption("Recurring bills. Not groceries or eating out. [What goes here?](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#-monthly-bills)")
         
         expense_categories = list(cfg['fixed_expenses'].keys())
         
@@ -583,7 +583,7 @@ with st.sidebar:
         
         # === BACKUP / TRANSFER ===
         with st.expander("📦 Backup & Transfer"):
-            st.caption("Move settings to another device.")
+            st.caption("Move settings to another device. [How does this work?](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#faq)")
             
             config_json = json.dumps(cfg, indent=2)
             st.download_button("⬇️ Download Backup", config_json, file_name="budget-settings.json",

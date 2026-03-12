@@ -216,7 +216,10 @@ Most people don't need this. Monthly CSV uploads work fine.
 ## FAQ
 
 **"Is my data stored anywhere?"**
-No. Everything runs in your browser session. When you close the tab, it's gone. That's why you download the settings file -- it's the only copy.
+Your settings (income, bills, accounts) are saved in your browser's local storage -- they'll still be there when you come back. But if you clear your browser data or switch devices, they're gone. Use **Backup & Transfer** in the sidebar to download a settings file you can load on any device.
+
+**"How does Backup & Transfer work?"**
+Click **⬇️ Download Backup** to save a small JSON file to your computer. To restore on another device (or after clearing browser data), open the sidebar, expand **📦 Backup & Transfer**, and use **⬆️ Load from Backup** to upload that file. Everything gets restored instantly.
 
 **"Can I use this on my phone?"**
 Yes. The dashboard is responsive. Open the Streamlit URL in your phone's browser.
