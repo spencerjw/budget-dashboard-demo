@@ -307,7 +307,7 @@ def make_budget_gauge(used_pct):
 # ========================
 # PAGE CONFIG + CSS
 # ========================
-st.set_page_config(page_title="Family Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
