@@ -552,15 +552,15 @@ with st.sidebar:
     st.markdown("---")
     
     # === SAVE BUTTON ===
-    if st.button("💾 Save Changes", use_container_width=True, type="primary"):
-        save_config(localS, cfg)
-        st.session_state['config_source'] = 'saved'
-        st.success("✅ Saved! Your settings are stored in this browser.")
+    save_clicked = st.button("💾 Save Changes", use_container_width=True, type="primary")
     
-    # Also auto-save in background
+    # Single save call (avoids duplicate element key)
     save_config(localS, cfg)
     
-    if st.session_state.get('config_source') == 'saved':
+    if save_clicked:
+        st.session_state['config_source'] = 'saved'
+        st.success("✅ Saved! Your settings are stored in this browser.")
+    elif st.session_state.get('config_source') == 'saved':
         st.caption("✅ Settings saved in this browser")
     
     st.markdown("---")
