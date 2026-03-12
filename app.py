@@ -365,42 +365,38 @@ init_session_config(localS)
 # SIDEBAR
 # ========================
 with st.sidebar:
-    st.markdown("## ⚙️ Setup")
-    
     # === STATUS MESSAGES ===
     if st.session_state.get('reset_success'):
         st.session_state['reset_success'] = False
         st.session_state['show_reset_banner'] = True
     
     # === MODE ===
-    data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0)
+    data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0, horizontal=True)
     is_my_budget = data_mode == "💰 My Budget"
+    cfg = st.session_state['config']
     
     if not is_my_budget:
-        st.caption("You're viewing a fake family's budget with sample transactions. Switch to **My Budget** to enter your own.")
-    
-    # === CSV UPLOAD (top of sidebar in My Budget mode) ===
-    if is_my_budget:
-        st.markdown("---")
+        st.info("👀 Viewing sample data for a fictional family. Switch to **💰 My Budget** to build your own.")
+    else:
+        st.caption("Your settings save automatically in this browser.")
+        
+        # === CSV UPLOAD ===
         st.markdown("### 📄 Upload Transactions")
-        st.caption("Export CSVs from your bank(s) and drop them here. Multiple files OK. [How do I get a CSV?](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#step-6-upload-your-transactions-optional-but-recommended)")
+        st.caption("Drop CSVs from your bank(s). Multiple OK. [How?](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#step-6-upload-your-transactions-optional-but-recommended)")
         uploaded_files = st.file_uploader("CSV files", type=['csv'], key="csv_upload",
             accept_multiple_files=True, label_visibility="collapsed")
         if uploaded_files:
             st.success(f"✅ {len(uploaded_files)} file{'s' if len(uploaded_files) > 1 else ''} loaded")
-    
-    st.markdown("---")
-    
-    # === BASIC INFO ===
-    cfg = st.session_state['config']
-    
-    if is_my_budget:
+        
+        st.markdown("---")
+        
+        # === BASIC INFO ===
         st.markdown("### 🏠 My Info")
         cfg['family_name'] = st.text_input("Dashboard Name", value=cfg['family_name'])
         cfg['monthly_income'] = st.number_input("Monthly Take-Home Pay ($)", value=cfg['monthly_income'],
             step=100, min_value=0)
-    
-    st.markdown("---")
+        
+        st.markdown("---")
     
     if is_my_budget:
         # === FIXED EXPENSES ===
