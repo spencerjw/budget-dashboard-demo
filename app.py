@@ -569,42 +569,41 @@ with st.sidebar:
         elif st.session_state.get('config_source') == 'saved':
             st.caption("✅ Settings saved in this browser")
         
-        st.markdown("---")
+        st.markdown("")
+        st.markdown("")
         
-        # === RESET ===
-        if st.button("🗑️ Reset Everything", use_container_width=True,
-            help="Clear all saved settings and start over with a blank slate."):
-            localS.deleteAll()
-            st.session_state['config'] = get_default_config()
-            st.session_state['config_source'] = 'default'
-            st.rerun()
-        
-        st.markdown("---")
-        
-        # === BACKUP / TRANSFER ===
-        st.markdown("---")
+        # === TAKE IT WITH YOU ===
         st.markdown("### 🚀 Take It With You")
-        st.caption("Ready for your own private dashboard? Download your settings, deploy your own free copy, and upload them there. Everything transfers. [Step-by-step guide](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#deploy-your-own-copy-free)")
-        with st.expander("📦 Download / Upload Settings"):
-            
-            config_json = json.dumps(cfg, indent=2)
-            st.download_button("⬇️ Download Backup", config_json, file_name="budget-settings.json",
-                mime="application/json", help="Save a backup file you can load on another device.")
-            
-            uploaded_config = st.file_uploader("⬆️ Load from Backup", type=['json'],
-                help="Upload a previously saved budget-settings.json file.", label_visibility="collapsed")
-            if uploaded_config:
-                try:
-                    loaded = json.loads(uploaded_config.read().decode('utf-8'))
-                    if 'monthly_income' in loaded and 'fixed_expenses' in loaded:
-                        st.session_state['config'] = loaded
-                        save_config(localS, loaded)
-                        st.success("✅ Settings loaded and saved!")
-                        st.rerun()
-                    else:
-                        st.error("Invalid settings file.")
-                except:
-                    st.error("Could not read settings file.")
+        st.caption("Ready for your own private dashboard? Download your settings, deploy your own free copy, and upload them there. [Step-by-step guide](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#deploy-your-own-copy-free)")
+        
+        config_json = json.dumps(cfg, indent=2)
+        st.download_button("⬇️ Download My Settings", config_json, file_name="budget-settings.json",
+            mime="application/json", use_container_width=True,
+            help="Save a backup file you can load on another device or your own dashboard.")
+        
+        uploaded_config = st.file_uploader("⬆️ Load Settings File", type=['json'],
+            help="Upload a previously saved budget-settings.json file.", label_visibility="collapsed")
+        if uploaded_config:
+            try:
+                loaded = json.loads(uploaded_config.read().decode('utf-8'))
+                if 'monthly_income' in loaded and 'fixed_expenses' in loaded:
+                    st.session_state['config'] = loaded
+                    save_config(localS, loaded)
+                    st.success("✅ Settings loaded and saved!")
+                    st.rerun()
+                else:
+                    st.error("Invalid settings file.")
+            except:
+                st.error("Could not read settings file.")
+        
+        st.markdown("")
+        with st.expander("⚠️ Reset Everything"):
+            st.caption("This clears all your settings and starts over.")
+            if st.button("🗑️ Yes, Reset Everything", use_container_width=True):
+                localS.deleteAll()
+                st.session_state['config'] = get_default_config()
+                st.session_state['config_source'] = 'default'
+                st.rerun()
 
 
 # ========================
