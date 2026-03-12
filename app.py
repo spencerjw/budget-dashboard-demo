@@ -347,6 +347,8 @@ st.markdown("""
     .streamlit-expanderHeader, .streamlit-expanderHeader p, [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 13px !important; }
     [data-testid="stExpander"] summary p { margin: 0 !important; }
     [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
+    [data-testid="stToast"] { left: 1rem !important; right: auto !important; background: rgba(30,41,59,0.95) !important; border: 1px solid rgba(52,211,153,0.3) !important; border-radius: 12px !important; backdrop-filter: blur(10px) !important; }
+    [data-testid="stToast"] div { color: #e2e8f0 !important; }
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
 """, unsafe_allow_html=True)
@@ -367,8 +369,8 @@ with st.sidebar:
     
     # === STATUS MESSAGES ===
     if st.session_state.get('reset_success'):
-        st.toast("✅ All settings have been reset to defaults.", icon="🗑️")
         st.session_state['reset_success'] = False
+        st.session_state['show_reset_banner'] = True
     
     # === MODE ===
     data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0)
@@ -734,6 +736,11 @@ def get_credit_accounts(accounts):
 # MAIN DASHBOARD
 # ========================
 def main():
+    # Show reset confirmation banner
+    if st.session_state.get('show_reset_banner'):
+        st.markdown('<div style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#34d399;font-weight:600;font-size:14px;text-align:center;">✅ All settings have been reset to defaults.</div>', unsafe_allow_html=True)
+        st.session_state['show_reset_banner'] = False
+    
     st.markdown(f'<div class="{badge_class}"><span>{badge_text}</span></div>', unsafe_allow_html=True)
     st.markdown(f'<div class="dashboard-title">💰 {FAMILY_NAME}</div>', unsafe_allow_html=True)
     
