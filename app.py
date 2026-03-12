@@ -665,15 +665,15 @@ def get_credit_accounts(accounts):
 # MAIN DASHBOARD
 # ========================
 def main():
-    # Settings hint at top right
-    hint_left, hint_right = st.columns([5, 1])
-    with hint_right:
+    # Settings hint at top left (where sidebar opens)
+    hint_left, hint_right = st.columns([1, 5])
+    with hint_left:
         st.markdown("""
-        <div style="text-align:right;padding:4px 0;">
+        <div style="padding:4px 0;">
             <span style="background:rgba(30,41,59,0.8);border:1px solid rgba(96,165,250,0.3);
                 border-radius:10px;padding:6px 14px;font-size:12px;color:#60a5fa;font-weight:600;
                 letter-spacing:0.5px;">
-                ◀ Settings
+                ⚙️ Settings ▸
             </span>
         </div>
         """, unsafe_allow_html=True)
