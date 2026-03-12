@@ -371,8 +371,22 @@ with st.sidebar:
         st.session_state['show_reset_banner'] = True
     
     # === MODE ===
-    data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0, horizontal=True)
-    is_my_budget = data_mode == "💰 My Budget"
+    if 'mode' not in st.session_state:
+        st.session_state['mode'] = 'demo'
+    
+    col_demo, col_budget = st.columns(2)
+    with col_demo:
+        demo_type = "primary" if st.session_state['mode'] == 'demo' else "secondary"
+        if st.button("🎲 Demo", use_container_width=True, type=demo_type):
+            st.session_state['mode'] = 'demo'
+            st.rerun()
+    with col_budget:
+        budget_type = "primary" if st.session_state['mode'] == 'budget' else "secondary"
+        if st.button("💰 My Budget", use_container_width=True, type=budget_type):
+            st.session_state['mode'] = 'budget'
+            st.rerun()
+    
+    is_my_budget = st.session_state['mode'] == 'budget'
     cfg = st.session_state['config']
     
     if not is_my_budget:
@@ -687,7 +701,7 @@ cfg = st.session_state['config']
 transactions = None
 is_demo = False
 
-if data_mode == "🎲 Demo":
+if not is_my_budget:
     transactions = generate_months_of_data(6)
     is_demo = True
     FIXED_EXPENSES = DEMO_FIXED_EXPENSES
