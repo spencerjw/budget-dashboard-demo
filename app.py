@@ -666,17 +666,14 @@ def get_credit_accounts(accounts):
 # ========================
 def main():
     # Settings hint at top left (where sidebar opens)
-    hint_left, hint_right = st.columns([1, 5])
-    with hint_left:
-        st.markdown("""
-        <div style="padding:4px 0;">
-            <span style="background:rgba(30,41,59,0.8);border:1px solid rgba(96,165,250,0.3);
-                border-radius:10px;padding:6px 14px;font-size:12px;color:#60a5fa;font-weight:600;
-                letter-spacing:0.5px;">
-                ⚙️ Settings ▸
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown("""
+    <div style="padding:2px 0 8px 0;">
+        <span style="background:rgba(30,41,59,0.8);border:1px solid rgba(96,165,250,0.3);
+            border-radius:10px;padding:8px 16px;font-size:13px;color:#60a5fa;font-weight:600;">
+            ⚙️ Click the <strong style="color:#e2e8f0;">✕</strong> or <strong style="color:#e2e8f0;">▸</strong> in the upper left to open/close Settings
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown(f'<div class="{badge_class}"><span>{badge_text}</span></div>', unsafe_allow_html=True)
     st.markdown(f'<div class="dashboard-title">💰 {FAMILY_NAME} Family Budget</div>', unsafe_allow_html=True)
