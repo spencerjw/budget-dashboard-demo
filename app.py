@@ -376,11 +376,11 @@ with st.sidebar:
     if is_my_budget:
         st.markdown("---")
         st.markdown("### 📄 Upload Transactions")
-        st.caption("Export a CSV from your bank and drop it here.")
-        uploaded_file = st.file_uploader("CSV file", type=['csv'], key="csv_upload",
-            label_visibility="collapsed")
-        if uploaded_file:
-            st.success(f"✅ File loaded")
+        st.caption("Export CSVs from your bank(s) and drop them here. Multiple files OK.")
+        uploaded_files = st.file_uploader("CSV files", type=['csv'], key="csv_upload",
+            accept_multiple_files=True, label_visibility="collapsed")
+        if uploaded_files:
+            st.success(f"✅ {len(uploaded_files)} file{'s' if len(uploaded_files) > 1 else ''} loaded")
     
     st.markdown("---")
     
@@ -638,11 +638,19 @@ else:
     badge_text = "💰 My Budget"
     
     # CSV upload was placed at top of sidebar - now handle the data
-    if 'csv_upload' in st.session_state and st.session_state['csv_upload'] is not None:
-        transactions = parse_csv_transactions(st.session_state['csv_upload'])
-        if transactions is not None:
+    csv_files = st.session_state.get('csv_upload', [])
+    if csv_files:
+        all_dfs = []
+        for f in csv_files:
+            parsed = parse_csv_transactions(f)
+            if parsed is not None and not parsed.empty:
+                all_dfs.append(parsed)
+        if all_dfs:
+            transactions = pd.concat(all_dfs, ignore_index=True)
             badge_class = "csv-badge"
-            badge_text = "📄 Your Data"
+            badge_text = f"📄 Your Data ({len(csv_files)} file{'s' if len(csv_files) > 1 else ''})"
+        else:
+            transactions = pd.DataFrame(columns=['Date', 'Amount', 'Merchant', 'Category Name', 'Category Group'])
     else:
         transactions = pd.DataFrame(columns=['Date', 'Amount', 'Merchant', 'Category Name', 'Category Group'])
 
