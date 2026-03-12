@@ -428,7 +428,11 @@ with st.sidebar:
                     with col3:
                         delete = st.button("🗑️", key=f"exp_del_{cat_name}_{item_name}", help="Remove this bill")
                     
-                    if not delete and new_name.strip():
+                    if delete:
+                        cfg['fixed_expenses'][cat_name] = {k: v for k, v in items.items() if k != item_name}
+                        st.session_state['open_expense_cat'] = cat_name
+                        st.rerun()
+                    elif new_name.strip():
                         updated_items[new_name.strip()] = new_amount
                 
                 # Add new bill
