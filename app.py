@@ -314,7 +314,9 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     .stApp { background: linear-gradient(160deg, #0a0e1a 0%, #111827 40%, #0f172a 100%); color: #e2e8f0; font-family: 'Inter', sans-serif; }
     #MainMenu, footer {visibility: hidden;}
-    [data-testid="stHeader"] { background: rgba(10,14,26,0.95) !important; }
+    [data-testid="stHeader"] { background: rgba(10,14,26,0.95) !important; height: 2.5rem !important; }
+    [data-testid="stToolbar"] { visibility: hidden !important; }
+    .block-container { padding-top: 2.5rem; }
     .block-container { padding-top: 1.5rem; max-width: 1200px; }
     .kpi-card { background: linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%); border-radius: 20px; padding: 28px 20px; text-align: center; box-shadow: 0 4px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(10px); margin-bottom: 12px; transition: transform 0.2s ease; }
     .kpi-card:hover { transform: translateY(-2px); }
