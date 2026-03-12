@@ -2,7 +2,7 @@
 
 A beautiful, dark-themed family budget dashboard built with Streamlit and Plotly. Works out of the box with demo data, or connect your own financial data via CSV upload.
 
-**<a href="https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/" target="_blank">🚀 Live Demo</a>** — Try it now with sample data *(opens in a new window)*
+**[🚀 Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** — Try it now with sample data
 
 ![Dashboard Preview](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?style=for-the-badge&logo=streamlit)
 ![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python)
@@ -30,13 +30,13 @@ Check out the **[Getting Started Guide](GETTING-STARTED.md)** — a step-by-step
 ## How to Use It
 
 ### Just Want to See the Demo?
-Click the **<a href="https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/" target="_blank">Live Demo</a>** link *(opens in a new window)*. It loads with 6 months of realistic sample data. Nothing to install.
+Click the **[Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** link. It loads with 6 months of realistic sample data. Nothing to install.
 
 ### Want to Track Your Own Budget?
 
 **Everything is done through the sidebar — no code to edit.**
 
-1. Open the <a href="https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/" target="_blank">dashboard</a> *(opens in a new window)*
+1. Open the [dashboard](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)
 2. Click the **>** arrow (top left) to open the sidebar
 3. Switch from "Demo Data" to "Upload My CSV"
 4. Fill in your income, bills, accounts, and due dates using the forms
