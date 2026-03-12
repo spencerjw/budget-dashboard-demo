@@ -375,6 +375,11 @@ BASE_CSS = """
     [data-testid="stSidebar"] [data-testid="stFileUploader"] section,
     [data-testid="stSidebar"] [data-testid="stFileUploader"] div { color: {sidebar_text} !important; }
     [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] { border-color: {sidebar_muted} !important; }
+    [data-testid="stSidebar"] input, [data-testid="stSidebar"] select,
+    [data-testid="stSidebar"] [data-baseweb="select"],
+    [data-testid="stSidebar"] [data-baseweb="input"] { background: {input_bg} !important; color: {sidebar_text} !important; }
+    [data-testid="stSidebar"] [data-baseweb="select"] * { color: {sidebar_text} !important; }
+    [data-testid="stSidebar"] button[kind="secondary"] { background: {input_bg} !important; color: {sidebar_text} !important; }
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
 """
@@ -390,7 +395,7 @@ DARK_THEME = {
     'row_bg': 'rgba(15,23,42,0.4)', 'track_bg': 'rgba(255,255,255,0.06)',
     'divider': 'rgba(71,85,105,0.3)',
     'sidebar_bg': 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
-    'sidebar_text': '#e2e8f0', 'sidebar_muted': '#94a3b8',
+    'sidebar_text': '#e2e8f0', 'sidebar_muted': '#94a3b8', 'input_bg': 'rgba(15,23,42,0.6)',
     'green': '#34d399', 'red': '#fb7185', 'blue': '#60a5fa',
     'yellow': '#fbbf24', 'orange': '#fb923c', 'purple': '#a78bfa', 'teal': '#2dd4bf',
 }
@@ -406,7 +411,7 @@ LIGHT_THEME = {
     'row_bg': 'rgba(248,250,252,0.8)', 'track_bg': 'rgba(0,0,0,0.06)',
     'divider': 'rgba(0,0,0,0.1)',
     'sidebar_bg': 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
-    'sidebar_text': '#1e293b', 'sidebar_muted': '#64748b',
+    'sidebar_text': '#1e293b', 'sidebar_muted': '#64748b', 'input_bg': '#ffffff',
     'green': '#059669', 'red': '#e11d48', 'blue': '#2563eb',
     'yellow': '#d97706', 'orange': '#ea580c', 'purple': '#7c3aed', 'teal': '#0d9488',
 }
