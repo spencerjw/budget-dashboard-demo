@@ -170,7 +170,7 @@ def get_local_storage():
 
 def get_default_config():
     return {
-        'family_name': 'My',
+        'family_name': 'My Budget',
         'monthly_income': 3700,
         'fixed_expenses': {
             'Household': {'Rent / Mortgage': 1200, 'Electric': 120, 'Internet': 65, 'Cell Phone': 85},
@@ -618,7 +618,7 @@ if data_mode == "🎲 Demo":
     FIXED_EXPENSES = DEMO_FIXED_EXPENSES
     ACCOUNTS = DEMO_ACCOUNTS
     DUE_DATES = DEMO_DUE_DATES
-    FAMILY_NAME = "Anderson"
+    FAMILY_NAME = "Anderson Family Budget"
     MONTHLY_INCOME = 9200
     badge_class = "demo-badge"
     badge_text = "⚡ Demo Mode — Sample Data"
@@ -683,7 +683,7 @@ def get_credit_accounts(accounts):
 # ========================
 def main():
     st.markdown(f'<div class="{badge_class}"><span>{badge_text}</span></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="dashboard-title">💰 {FAMILY_NAME} Family Budget</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="dashboard-title">💰 {FAMILY_NAME}</div>', unsafe_allow_html=True)
     
     # Period selector
     available_months = get_available_months(transactions) if transactions is not None and not transactions.empty else []
