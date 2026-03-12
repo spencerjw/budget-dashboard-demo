@@ -432,34 +432,87 @@ with st.sidebar:
     
     # === ACCOUNTS ===
     st.markdown("### 💰 Accounts & Balances")
-    st.caption("What you have and what you owe. Update these whenever you check in.")
+    st.caption("Update these whenever you check in.")
     
     updated_accounts = []
-    for i, acct in enumerate(cfg['accounts']):
+    
+    # --- Cash Accounts (Checking, Savings, Investment) ---
+    cash_accounts = [a for a in cfg['accounts'] if a['type'] in ('checking', 'savings', 'investment')]
+    debt_accounts = [a for a in cfg['accounts'] if a['type'] in ('credit', 'loan')]
+    
+    st.markdown("#### 🏦 Cash & Savings")
+    st.caption("Money you have. Check your bank app for current balances.")
+    
+    for i, acct in enumerate(cash_accounts):
+        type_labels = {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment'}
+        type_label = type_labels.get(acct['type'], acct['type'])
+        
         with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}"):
-            a_name = st.text_input("Account Name", value=acct['name'], key=f"acct_name_{i}")
-            a_type = st.selectbox("Type", ['checking', 'savings', 'credit', 'loan', 'investment'],
-                index=['checking', 'savings', 'credit', 'loan', 'investment'].index(acct['type']),
-                key=f"acct_type_{i}",
-                help="Checking/Savings = money you have. Credit/Loan = money you owe. Investment = retirement, stocks, etc.")
-            a_balance = st.number_input("Current Balance ($)", value=acct['balance'], step=100, key=f"acct_bal_{i}",
-                help="For credit cards and loans, this is what you owe.")
-            a_limit = st.number_input("Limit / Original Amount ($)", value=acct['limit'], step=100, min_value=0, key=f"acct_lim_{i}",
-                help="Credit card limit, original loan amount, etc. Leave 0 for checking/savings.")
+            a_name = st.text_input("Account Name", value=acct['name'], key=f"cash_name_{i}",
+                help="Whatever you call this account. e.g. 'Chase Checking' or 'Ally Savings'")
+            a_type = st.selectbox("Account Type", ['checking', 'savings', 'investment'],
+                index=['checking', 'savings', 'investment'].index(acct['type']),
+                format_func=lambda x: {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment / Retirement'}[x],
+                key=f"cash_type_{i}")
+            a_balance = st.number_input("Current Balance ($)", value=acct['balance'], step=100, key=f"cash_bal_{i}",
+                help="What your account shows right now.")
             
-            delete_acct = st.button("🗑️ Remove Account", key=f"acct_del_{i}")
+            delete_acct = st.button("🗑️ Remove", key=f"cash_del_{i}")
+            if not delete_acct:
+                updated_accounts.append({'name': a_name, 'type': a_type, 'balance': a_balance, 'limit': 0})
+    
+    with st.expander("➕ Add a cash / savings account"):
+        na_name = st.text_input("Account name", placeholder="e.g. Ally Savings", key="new_cash_name")
+        na_type = st.selectbox("Type", ['checking', 'savings', 'investment'],
+            format_func=lambda x: {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment / Retirement'}[x],
+            key="new_cash_type")
+        na_balance = st.number_input("Current Balance ($)", value=0, step=100, key="new_cash_bal")
+        if st.button("Add Account", key="add_cash") and na_name.strip():
+            updated_accounts.append({'name': na_name.strip(), 'type': na_type, 'balance': na_balance, 'limit': 0})
+            st.rerun()
+    
+    # --- Credit Cards & Loans ---
+    st.markdown("#### 💳 Credit Cards & Loans")
+    st.caption("Money you owe. Balance is what you owe now. Limit is your max (credit cards) or what you originally borrowed (loans).")
+    
+    for i, acct in enumerate(debt_accounts):
+        type_labels = {'credit': '💳 Credit Card', 'loan': '🏦 Loan'}
+        type_label = type_labels.get(acct['type'], acct['type'])
+        pct = f" ({acct['balance']/acct['limit']*100:.0f}%)" if acct['limit'] > 0 else ""
+        
+        with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}{pct}"):
+            a_name = st.text_input("Account Name", value=acct['name'], key=f"debt_name_{i}",
+                help="e.g. 'Chase Visa', 'Car Loan', 'Student Loans'")
+            a_type = st.selectbox("Account Type", ['credit', 'loan'],
+                index=['credit', 'loan'].index(acct['type']),
+                format_func=lambda x: {'credit': '💳 Credit Card', 'loan': '🏦 Loan (car, student, personal, etc.)'}[x],
+                key=f"debt_type_{i}")
+            a_balance = st.number_input("Current Balance Owed ($)", value=acct['balance'], step=100, min_value=0, key=f"debt_bal_{i}",
+                help="What you currently owe. Check your latest statement or app.")
             
+            if a_type == 'credit':
+                a_limit = st.number_input("Credit Limit ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
+                    help="The maximum you're allowed to charge. This is on your statement or in your card's app.")
+            else:
+                a_limit = st.number_input("Original Loan Amount ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
+                    help="How much you originally borrowed. This shows how much progress you've made paying it down.")
+            
+            delete_acct = st.button("🗑️ Remove", key=f"debt_del_{i}")
             if not delete_acct:
                 updated_accounts.append({'name': a_name, 'type': a_type, 'balance': a_balance, 'limit': a_limit})
     
-    # Add new account
-    with st.expander("➕ Add an account"):
-        na_name = st.text_input("Account name", placeholder="e.g. Chase Visa")
-        na_type = st.selectbox("Type", ['checking', 'savings', 'credit', 'loan', 'investment'], key="new_acct_type")
-        na_balance = st.number_input("Balance ($)", value=0, step=100, key="new_acct_bal")
-        na_limit = st.number_input("Limit ($)", value=0, step=100, min_value=0, key="new_acct_lim")
-        if st.button("Add Account") and na_name.strip():
-            updated_accounts.append({'name': na_name.strip(), 'type': na_type, 'balance': na_balance, 'limit': na_limit})
+    with st.expander("➕ Add a credit card or loan"):
+        nd_name = st.text_input("Account name", placeholder="e.g. Chase Visa, Car Loan", key="new_debt_name")
+        nd_type = st.selectbox("Type", ['credit', 'loan'],
+            format_func=lambda x: {'credit': '💳 Credit Card', 'loan': '🏦 Loan'}[x],
+            key="new_debt_type")
+        nd_balance = st.number_input("Balance Owed ($)", value=0, step=100, min_value=0, key="new_debt_bal")
+        if nd_type == 'credit':
+            nd_limit = st.number_input("Credit Limit ($)", value=0, step=100, min_value=0, key="new_debt_lim")
+        else:
+            nd_limit = st.number_input("Original Loan Amount ($)", value=0, step=100, min_value=0, key="new_debt_lim")
+        if st.button("Add Account", key="add_debt") and nd_name.strip():
+            updated_accounts.append({'name': nd_name.strip(), 'type': nd_type, 'balance': nd_balance, 'limit': nd_limit})
             st.rerun()
     
     cfg['accounts'] = updated_accounts
