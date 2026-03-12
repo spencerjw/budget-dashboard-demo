@@ -582,8 +582,10 @@ with st.sidebar:
         st.markdown("---")
         
         # === BACKUP / TRANSFER ===
-        with st.expander("📦 Backup & Transfer"):
-            st.caption("Move settings to another device. [How does this work?](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#faq)")
+        st.markdown("---")
+        st.markdown("### 🚀 Take It With You")
+        st.caption("Ready for your own private dashboard? Download your settings, deploy your own free copy, and upload them there. Everything transfers. [Step-by-step guide](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#deploy-your-own-copy-free)")
+        with st.expander("📦 Download / Upload Settings"):
             
             config_json = json.dumps(cfg, indent=2)
             st.download_button("⬇️ Download Backup", config_json, file_name="budget-settings.json",
