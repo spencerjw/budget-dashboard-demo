@@ -548,18 +548,33 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # === AUTO-SAVE ===
-    # Save to browser localStorage automatically
+    # === SAVE BUTTON ===
+    if st.button("💾 Save Changes", use_container_width=True, type="primary"):
+        save_config(localS, cfg)
+        st.session_state['config_source'] = 'saved'
+        st.success("✅ Saved! Your settings are stored in this browser.")
+    
+    # Also auto-save in background
     save_config(localS, cfg)
     
     if st.session_state.get('config_source') == 'saved':
-        st.markdown('<div style="font-size:11px;color:#34d399;text-align:center;">✅ Your settings are saved in this browser</div>', unsafe_allow_html=True)
+        st.caption("✅ Settings saved in this browser")
+    
+    st.markdown("---")
+    
+    # === RESET ===
+    if st.button("🗑️ Reset Everything", use_container_width=True,
+        help="Clear all saved settings and start over with a blank slate."):
+        localS.deleteAll()
+        st.session_state['config'] = get_default_config()
+        st.session_state['config_source'] = 'default'
+        st.rerun()
     
     st.markdown("---")
     
     # === BACKUP / TRANSFER ===
-    with st.expander("💾 Backup & Transfer"):
-        st.caption("Your settings auto-save in this browser. Use these options to back up or move to another device.")
+    with st.expander("📦 Backup & Transfer"):
+        st.caption("Move your settings to another device or browser.")
         
         config_json = json.dumps(cfg, indent=2)
         st.download_button("⬇️ Download Backup", config_json, file_name="budget-settings.json",
@@ -579,12 +594,6 @@ with st.sidebar:
                     st.error("Invalid settings file.")
             except:
                 st.error("Could not read settings file.")
-        
-        if st.button("🗑️ Reset Everything", help="Clear all saved settings and start fresh."):
-            localS.deleteAll()
-            st.session_state['config'] = get_default_config()
-            st.session_state['config_source'] = 'default'
-            st.rerun()
 
 
 # ========================
