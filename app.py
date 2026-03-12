@@ -444,7 +444,7 @@ with st.sidebar:
         
         # === ACCOUNTS ===
         st.markdown("### 💰 Accounts & Balances")
-        st.caption("Current balances.")
+        st.caption("Tap each account to enter your current balance. Check your bank app for the numbers. [Help](https://github.com/spencerjw/budget-dashboard-demo/blob/main/GETTING-STARTED.md#-accounts--balances)")
         
         updated_accounts = []
         
@@ -452,7 +452,7 @@ with st.sidebar:
         debt_accounts = [a for a in cfg['accounts'] if a['type'] in ('credit', 'loan')]
         
         st.markdown("#### 🏦 Cash & Savings")
-        st.caption("Money you have.")
+        st.caption("👆 Tap to expand and enter your balance.")
         
         for i, acct in enumerate(cash_accounts):
             with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}"):
@@ -480,7 +480,7 @@ with st.sidebar:
                 st.rerun()
         
         st.markdown("#### 💳 Credit Cards & Loans")
-        st.caption("Money you owe.")
+        st.caption("👆 Tap to expand. Enter balance owed, limit, and due date.")
         
         for i, acct in enumerate(debt_accounts):
             pct = f" ({acct['balance']/acct['limit']*100:.0f}%)" if acct['limit'] > 0 else ""
