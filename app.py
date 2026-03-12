@@ -215,7 +215,6 @@ def init_session_config(local_storage):
 def save_config(local_storage, config):
     """Save config to browser localStorage."""
     local_storage.setItem(LOCAL_STORAGE_KEY, config)
-        st.session_state['data_mode'] = 'demo'
 
 
 # ========================

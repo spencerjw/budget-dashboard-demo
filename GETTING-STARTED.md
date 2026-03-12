@@ -22,7 +22,7 @@ That's it. It's not going to manage your money for you -- it just makes it visib
 ### Step 1: Open the Dashboard
 
 **Option A -- Use it online (easiest):**
-Open the [live demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/) in your browser. It works on your phone too.
+Open the <a href="https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/" target="_blank">live demo</a> *(opens in a new window)* in your browser. It works on your phone too.
 
 **Option B -- Run it yourself:**
 If you want your own private copy, see "Deploy Your Own Copy" at the bottom of this guide.
