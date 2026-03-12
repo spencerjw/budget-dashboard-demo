@@ -365,6 +365,11 @@ init_session_config(localS)
 with st.sidebar:
     st.markdown("## ⚙️ Setup")
     
+    # === STATUS MESSAGES ===
+    if st.session_state.get('reset_success'):
+        st.success("✅ All settings have been reset to defaults.")
+        st.session_state['reset_success'] = False
+    
     # === MODE ===
     data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0)
     is_my_budget = data_mode == "💰 My Budget"
@@ -442,6 +447,7 @@ with st.sidebar:
                         if st.button("✅ Save", key=f"save_bill_{cat_name}", use_container_width=True):
                             if new_bill_name.strip() and new_bill_amount > 0:
                                 updated_items[new_bill_name.strip()] = new_bill_amount
+                                cfg['fixed_expenses'][cat_name] = updated_items
                                 st.session_state[show_add_key] = False
                                 st.session_state['open_expense_cat'] = cat_name
                                 st.rerun()
@@ -648,9 +654,7 @@ with st.sidebar:
                         st.session_state['confirm_reset'] = False
                         st.rerun()
             
-            if st.session_state.get('reset_success'):
-                st.success("✅ All settings have been reset to defaults.")
-                st.session_state['reset_success'] = False
+
 
 
 # ========================
