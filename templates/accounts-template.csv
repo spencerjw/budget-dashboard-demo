@@ -1,0 +1,7 @@
+Account Name,Type,Current Balance,Limit or Original Amount,Notes
+Checking Account,checking,2450,,Your main bank account where paychecks go
+Savings Account,savings,3200,,"Emergency fund, rainy day money, etc."
+Credit Card,credit,-850,3000,"Balance you owe. Limit is your max. Negative = you owe money."
+Car Loan,loan,-14500,22000,"What you still owe. Original amount is what you borrowed."
+Student Loans,loan,-28000,35000,"Total remaining across all student loans"
+401(k) / Retirement,investment,4200,,"Whatever your retirement account shows. $0 is fine if you're just starting."

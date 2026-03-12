@@ -20,6 +20,10 @@ A beautiful, dark-themed family budget dashboard built with Streamlit and Plotly
 - **📆 Month Selector** — View current month, past months, or year-to-date
 - **🌙 Dark Theme** — Polished dark UI with glassmorphism effects
 
+## 🆕 New to Budgeting?
+
+Check out the **[Getting Started Guide](GETTING-STARTED.md)** -- walks you through everything from figuring out your income and expenses to deploying your own dashboard. No finance background needed. Includes template files to get you started.
+
 ## Three Ways to Use It
 
 ### 1. 🎲 Demo Mode (Default)
@@ -215,6 +219,13 @@ A: Yes. The layout is responsive and works on phones and tablets.
 A: Fork it and go wild. The codebase is a single `app.py` file — easy to modify.
 
 ---
+
+## Templates
+
+The `templates/` folder includes starter files:
+- **`fixed-expenses-template.csv`** — Common recurring bills with examples and notes
+- **`transactions-template.csv`** — Sample transaction data showing the expected CSV format
+- **`accounts-template.csv`** — Account balances template (checking, savings, credit cards, loans)
 
 ## License
 

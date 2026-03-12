@@ -1,0 +1,21 @@
+Date,Amount,Description,Category
+2025-03-01,-52.34,H-E-B Grocery,Groceries
+2025-03-01,-4.89,Starbucks,Restaurants
+2025-03-02,-35.00,Shell Gas Station,Gas & Auto
+2025-03-03,-12.50,Chipotle,Restaurants
+2025-03-04,-89.99,Amazon - Household Stuff,Shopping
+2025-03-05,-45.00,Electric Bill Autopay,Bills (skip - already in fixed expenses)
+2025-03-06,-8.99,Spotify,Bills (skip - already in fixed expenses)
+2025-03-07,1850.00,Direct Deposit - Paycheck,Income
+2025-03-08,-22.00,Movie Tickets,Entertainment
+2025-03-09,-67.43,Target,Shopping
+2025-03-10,-15.00,Great Clips Haircut,Personal Care
+2025-03-12,-38.50,Walgreens Pharmacy,Health
+2025-03-14,-155.00,Costco,Groceries
+2025-03-15,-28.00,Uber Ride,Transportation
+2025-03-17,-42.00,Oil Change - Valvoline,Gas & Auto
+2025-03-19,-18.75,Whataburger,Restaurants
+2025-03-21,1850.00,Direct Deposit - Paycheck,Income
+2025-03-22,-95.00,Academy Sports,Shopping
+2025-03-25,-63.20,H-E-B Grocery,Groceries
+2025-03-28,-32.00,Dave & Busters,Entertainment
