@@ -2,7 +2,7 @@
 
 A beautiful, dark-themed family budget dashboard built with Streamlit and Plotly. Works out of the box with demo data, or connect your own financial data via CSV upload.
 
-**[🚀 Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** — Try it now with sample data
+**[🚀 Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** — Try it now with sample data *(right-click → "Open in new tab" to keep this page open)*
 
 ![Dashboard Preview](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?style=for-the-badge&logo=streamlit)
 ![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python)
