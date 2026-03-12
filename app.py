@@ -777,14 +777,6 @@ def main():
         st.markdown('<div style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#34d399;font-weight:600;font-size:14px;text-align:center;">✅ All settings have been reset to defaults.</div>', unsafe_allow_html=True)
         st.session_state['show_reset_banner'] = False
     
-    # Dynamic page title
-    import streamlit.components.v1 as components
-    page_title = FAMILY_NAME.replace("'", "\\'") if is_my_budget else "Demo Budget Dashboard"
-    components.html(f"""<script>
-        try {{ parent.document.title = '{page_title}'; }} catch(e) {{}}
-        setInterval(function() {{ try {{ parent.document.title = '{page_title}'; }} catch(e) {{}} }}, 500);
-    </script>""", height=0)
-    
     st.markdown(f'<div class="{badge_class}"><span>{badge_text}</span></div>', unsafe_allow_html=True)
     st.markdown(f'<div class="dashboard-title">💰 {FAMILY_NAME}</div>', unsafe_allow_html=True)
     
