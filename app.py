@@ -1,9 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
 from datetime import datetime, date, timedelta
+from streamlit_local_storage import LocalStorage
 import pandas as pd
 import random
 import json
+import time
 import io
 
 # ========================
@@ -158,8 +160,14 @@ def parse_csv_transactions(uploaded_file):
 
 
 # ========================
-# CONFIG SAVE/LOAD
+# LOCAL STORAGE (Browser Persistence)
 # ========================
+LOCAL_STORAGE_KEY = "budget_dashboard_config"
+
+def get_local_storage():
+    """Get LocalStorage instance."""
+    return LocalStorage()
+
 def get_default_config():
     return {
         'family_name': 'My',
@@ -178,11 +186,35 @@ def get_default_config():
     }
 
 
-def init_session_config():
-    """Initialize session state with config."""
+def init_session_config(local_storage):
+    """Initialize session state, loading from browser localStorage if available."""
     if 'config_loaded' not in st.session_state:
         st.session_state['config_loaded'] = True
-        st.session_state['config'] = get_default_config()
+        # Try to load from browser localStorage
+        saved = local_storage.getItem(LOCAL_STORAGE_KEY)
+        if saved and isinstance(saved, dict) and 'monthly_income' in saved:
+            st.session_state['config'] = saved
+            st.session_state['config_source'] = 'saved'
+        elif saved and isinstance(saved, str):
+            try:
+                parsed = json.loads(saved)
+                if 'monthly_income' in parsed:
+                    st.session_state['config'] = parsed
+                    st.session_state['config_source'] = 'saved'
+                else:
+                    st.session_state['config'] = get_default_config()
+                    st.session_state['config_source'] = 'default'
+            except:
+                st.session_state['config'] = get_default_config()
+                st.session_state['config_source'] = 'default'
+        else:
+            st.session_state['config'] = get_default_config()
+            st.session_state['config_source'] = 'default'
+
+
+def save_config(local_storage, config):
+    """Save config to browser localStorage."""
+    local_storage.setItem(LOCAL_STORAGE_KEY, config)
         st.session_state['data_mode'] = 'demo'
 
 
@@ -323,7 +355,8 @@ st.markdown("""
 # ========================
 # INIT
 # ========================
-init_session_config()
+localS = get_local_storage()
+init_session_config(localS)
 
 
 # ========================
@@ -463,30 +496,43 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # === SAVE / LOAD CONFIG ===
-    st.markdown("### 💾 Save & Load Settings")
-    st.caption("Download your settings to keep them. Upload them next time you visit.")
+    # === AUTO-SAVE ===
+    # Save to browser localStorage automatically
+    save_config(localS, cfg)
     
-    # Save
-    config_json = json.dumps(cfg, indent=2)
-    st.download_button("⬇️ Download My Settings", config_json, file_name="budget-settings.json",
-        mime="application/json", help="Saves all your bills, accounts, and settings to a file.")
+    if st.session_state.get('config_source') == 'saved':
+        st.markdown('<div style="font-size:11px;color:#34d399;text-align:center;">✅ Your settings are saved in this browser</div>', unsafe_allow_html=True)
     
-    # Load
-    uploaded_config = st.file_uploader("⬆️ Load Settings", type=['json'],
-        help="Upload a previously saved budget-settings.json file.", label_visibility="collapsed")
-    if uploaded_config:
-        try:
-            loaded = json.loads(uploaded_config.read().decode('utf-8'))
-            # Validate basic structure
-            if 'monthly_income' in loaded and 'fixed_expenses' in loaded:
-                st.session_state['config'] = loaded
-                st.success("✅ Settings loaded!")
-                st.rerun()
-            else:
-                st.error("Invalid settings file.")
-        except:
-            st.error("Could not read settings file.")
+    st.markdown("---")
+    
+    # === BACKUP / TRANSFER ===
+    with st.expander("💾 Backup & Transfer"):
+        st.caption("Your settings auto-save in this browser. Use these options to back up or move to another device.")
+        
+        config_json = json.dumps(cfg, indent=2)
+        st.download_button("⬇️ Download Backup", config_json, file_name="budget-settings.json",
+            mime="application/json", help="Save a backup file you can load on another device.")
+        
+        uploaded_config = st.file_uploader("⬆️ Load from Backup", type=['json'],
+            help="Upload a previously saved budget-settings.json file.", label_visibility="collapsed")
+        if uploaded_config:
+            try:
+                loaded = json.loads(uploaded_config.read().decode('utf-8'))
+                if 'monthly_income' in loaded and 'fixed_expenses' in loaded:
+                    st.session_state['config'] = loaded
+                    save_config(localS, loaded)
+                    st.success("✅ Settings loaded and saved!")
+                    st.rerun()
+                else:
+                    st.error("Invalid settings file.")
+            except:
+                st.error("Could not read settings file.")
+        
+        if st.button("🗑️ Reset Everything", help="Clear all saved settings and start fresh."):
+            localS.deleteAll()
+            st.session_state['config'] = get_default_config()
+            st.session_state['config_source'] = 'default'
+            st.rerun()
 
 
 # ========================
