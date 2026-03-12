@@ -368,8 +368,13 @@ with st.sidebar:
     st.markdown("## ⚙️ Setup")
     
     # === DATA SOURCE ===
-    data_mode = st.radio("📊 Transaction Data", ["🎲 Demo Data (Sample)", "📄 Upload My CSV"],
-        index=0, help="Demo shows realistic fake data. CSV lets you upload your own bank export.")
+    data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"],
+        index=0, help="Demo shows a sample dashboard. My Budget lets you set up your own.")
+    
+    is_my_budget = data_mode == "💰 My Budget"
+    
+    if not is_my_budget:
+        st.info("👆 Switch to **My Budget** to enter your own income, bills, and accounts.")
     
     st.markdown("---")
     
@@ -378,225 +383,216 @@ with st.sidebar:
     cfg = st.session_state['config']
     
     cfg['family_name'] = st.text_input("Dashboard Name", value=cfg['family_name'],
+        disabled=not is_my_budget,
         help="Whatever you want at the top. Your last name, 'My Budget', anything.")
     cfg['monthly_income'] = st.number_input("Monthly Take-Home Pay ($)", value=cfg['monthly_income'],
-        step=100, min_value=0, help="The amount that hits your bank account after taxes. Not your salary.")
+        step=100, min_value=0, disabled=not is_my_budget,
+        help="The amount that hits your bank account after taxes. Not your salary.")
     
     st.markdown("---")
     
-    # === FIXED EXPENSES ===
-    st.markdown("### 📋 Monthly Bills")
-    st.caption("Recurring charges that are roughly the same every month. Don't include groceries, gas, or eating out here.")
-    
-    expense_categories = list(cfg['fixed_expenses'].keys())
-    
-    for cat_name in expense_categories:
-        with st.expander(f"**{cat_name}** (${sum(cfg['fixed_expenses'][cat_name].values()):,.0f}/mo)"):
-            items = cfg['fixed_expenses'][cat_name]
-            updated_items = {}
-            
-            # Show existing items
-            for item_name, amount in list(items.items()):
-                col1, col2, col3 = st.columns([3, 2, 1])
-                with col1:
-                    new_name = st.text_input("Name", value=item_name, key=f"exp_name_{cat_name}_{item_name}", label_visibility="collapsed")
-                with col2:
-                    new_amount = st.number_input("$", value=amount, step=5, min_value=0, key=f"exp_amt_{cat_name}_{item_name}", label_visibility="collapsed")
-                with col3:
-                    delete = st.button("🗑️", key=f"exp_del_{cat_name}_{item_name}", help="Remove this bill")
+    if is_my_budget:
+        # === FIXED EXPENSES ===
+        st.markdown("### 📋 Monthly Bills")
+        st.caption("Recurring charges that are roughly the same every month. Don't include groceries, gas, or eating out here.")
+        
+        expense_categories = list(cfg['fixed_expenses'].keys())
+        
+        for cat_name in expense_categories:
+            with st.expander(f"**{cat_name}** (${sum(cfg['fixed_expenses'][cat_name].values()):,.0f}/mo)"):
+                items = cfg['fixed_expenses'][cat_name]
+                updated_items = {}
                 
-                if not delete and new_name.strip():
-                    updated_items[new_name.strip()] = new_amount
-            
-            # Add new item
-            st.markdown("---")
-            nc1, nc2, nc3 = st.columns([3, 2, 1])
-            with nc1:
-                new_bill_name = st.text_input("New bill name", key=f"new_name_{cat_name}", placeholder="e.g. Netflix", label_visibility="collapsed")
-            with nc2:
-                new_bill_amount = st.number_input("$", value=0, step=5, min_value=0, key=f"new_amt_{cat_name}", label_visibility="collapsed")
-            with nc3:
-                add_bill = st.button("➕", key=f"add_{cat_name}", help="Add this bill")
-            
-            if add_bill and new_bill_name.strip() and new_bill_amount > 0:
-                updated_items[new_bill_name.strip()] = new_bill_amount
-            
-            cfg['fixed_expenses'][cat_name] = updated_items
-    
-    # Add new category
-    with st.expander("➕ Add a new category"):
-        new_cat = st.text_input("Category name", placeholder="e.g. Medical, Childcare")
-        if st.button("Create Category") and new_cat.strip():
-            if new_cat.strip() not in cfg['fixed_expenses']:
-                cfg['fixed_expenses'][new_cat.strip()] = {}
-                st.rerun()
-    
-    st.markdown("---")
-    
-    # === ACCOUNTS ===
-    st.markdown("### 💰 Accounts & Balances")
-    st.caption("Update these whenever you check in.")
-    
-    updated_accounts = []
-    
-    # --- Cash Accounts (Checking, Savings, Investment) ---
-    cash_accounts = [a for a in cfg['accounts'] if a['type'] in ('checking', 'savings', 'investment')]
-    debt_accounts = [a for a in cfg['accounts'] if a['type'] in ('credit', 'loan')]
-    
-    st.markdown("#### 🏦 Cash & Savings")
-    st.caption("Money you have. Check your bank app for current balances.")
-    
-    for i, acct in enumerate(cash_accounts):
-        type_labels = {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment'}
-        type_label = type_labels.get(acct['type'], acct['type'])
+                for item_name, amount in list(items.items()):
+                    col1, col2, col3 = st.columns([3, 2, 1])
+                    with col1:
+                        new_name = st.text_input("Name", value=item_name, key=f"exp_name_{cat_name}_{item_name}", label_visibility="collapsed")
+                    with col2:
+                        new_amount = st.number_input("$", value=amount, step=5, min_value=0, key=f"exp_amt_{cat_name}_{item_name}", label_visibility="collapsed")
+                    with col3:
+                        delete = st.button("🗑️", key=f"exp_del_{cat_name}_{item_name}", help="Remove this bill")
+                    
+                    if not delete and new_name.strip():
+                        updated_items[new_name.strip()] = new_amount
+                
+                st.markdown("---")
+                nc1, nc2, nc3 = st.columns([3, 2, 1])
+                with nc1:
+                    new_bill_name = st.text_input("New bill name", key=f"new_name_{cat_name}", placeholder="e.g. Netflix", label_visibility="collapsed")
+                with nc2:
+                    new_bill_amount = st.number_input("$", value=0, step=5, min_value=0, key=f"new_amt_{cat_name}", label_visibility="collapsed")
+                with nc3:
+                    add_bill = st.button("➕", key=f"add_{cat_name}", help="Add this bill")
+                
+                if add_bill and new_bill_name.strip() and new_bill_amount > 0:
+                    updated_items[new_bill_name.strip()] = new_bill_amount
+                
+                cfg['fixed_expenses'][cat_name] = updated_items
         
-        with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}"):
-            a_name = st.text_input("Account Name", value=acct['name'], key=f"cash_name_{i}",
-                help="Whatever you call this account. e.g. 'Chase Checking' or 'Ally Savings'")
-            a_type = st.selectbox("Account Type", ['checking', 'savings', 'investment'],
-                index=['checking', 'savings', 'investment'].index(acct['type']),
-                format_func=lambda x: {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment / Retirement'}[x],
-                key=f"cash_type_{i}")
-            a_balance = st.number_input("Current Balance ($)", value=acct['balance'], step=100, key=f"cash_bal_{i}",
-                help="What your account shows right now.")
-            
-            delete_acct = st.button("🗑️ Remove", key=f"cash_del_{i}")
-            if not delete_acct:
-                updated_accounts.append({'name': a_name, 'type': a_type, 'balance': a_balance, 'limit': 0})
-    
-    with st.expander("➕ Add a cash / savings account"):
-        na_name = st.text_input("Account name", placeholder="e.g. Ally Savings", key="new_cash_name")
-        na_type = st.selectbox("Type", ['checking', 'savings', 'investment'],
-            format_func=lambda x: {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment / Retirement'}[x],
-            key="new_cash_type")
-        na_balance = st.number_input("Current Balance ($)", value=0, step=100, key="new_cash_bal")
-        if st.button("Add Account", key="add_cash") and na_name.strip():
-            updated_accounts.append({'name': na_name.strip(), 'type': na_type, 'balance': na_balance, 'limit': 0})
-            st.rerun()
-    
-    # --- Credit Cards & Loans ---
-    st.markdown("#### 💳 Credit Cards & Loans")
-    st.caption("Money you owe. Balance is what you owe now. Limit is your max (credit cards) or what you originally borrowed (loans).")
-    
-    for i, acct in enumerate(debt_accounts):
-        type_labels = {'credit': '💳 Credit Card', 'loan': '🏦 Loan'}
-        type_label = type_labels.get(acct['type'], acct['type'])
-        pct = f" ({acct['balance']/acct['limit']*100:.0f}%)" if acct['limit'] > 0 else ""
-        
-        with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}{pct}"):
-            a_name = st.text_input("Account Name", value=acct['name'], key=f"debt_name_{i}",
-                help="e.g. 'Chase Visa', 'Car Loan', 'Student Loans'")
-            a_type = st.selectbox("Account Type", ['credit', 'loan'],
-                index=['credit', 'loan'].index(acct['type']),
-                format_func=lambda x: {'credit': '💳 Credit Card', 'loan': '🏦 Loan (car, student, personal, etc.)'}[x],
-                key=f"debt_type_{i}")
-            a_balance = st.number_input("Current Balance Owed ($)", value=acct['balance'], step=100, min_value=0, key=f"debt_bal_{i}",
-                help="What you currently owe. Check your latest statement or app.")
-            
-            if a_type == 'credit':
-                a_limit = st.number_input("Credit Limit ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
-                    help="The maximum you're allowed to charge. This is on your statement or in your card's app.")
-            else:
-                a_limit = st.number_input("Original Loan Amount ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
-                    help="How much you originally borrowed. This shows how much progress you've made paying it down.")
-            
-            delete_acct = st.button("🗑️ Remove", key=f"debt_del_{i}")
-            if not delete_acct:
-                updated_accounts.append({'name': a_name, 'type': a_type, 'balance': a_balance, 'limit': a_limit})
-    
-    with st.expander("➕ Add a credit card or loan"):
-        nd_name = st.text_input("Account name", placeholder="e.g. Chase Visa, Car Loan", key="new_debt_name")
-        nd_type = st.selectbox("Type", ['credit', 'loan'],
-            format_func=lambda x: {'credit': '💳 Credit Card', 'loan': '🏦 Loan'}[x],
-            key="new_debt_type")
-        nd_balance = st.number_input("Balance Owed ($)", value=0, step=100, min_value=0, key="new_debt_bal")
-        if nd_type == 'credit':
-            nd_limit = st.number_input("Credit Limit ($)", value=0, step=100, min_value=0, key="new_debt_lim")
-        else:
-            nd_limit = st.number_input("Original Loan Amount ($)", value=0, step=100, min_value=0, key="new_debt_lim")
-        if st.button("Add Account", key="add_debt") and nd_name.strip():
-            updated_accounts.append({'name': nd_name.strip(), 'type': nd_type, 'balance': nd_balance, 'limit': nd_limit})
-            st.rerun()
-    
-    cfg['accounts'] = updated_accounts
-    
-    st.markdown("---")
-    
-    # === DUE DATES ===
-    st.markdown("### 📅 Bill Due Dates")
-    st.caption("Day of the month each bill is due.")
-    
-    updated_dues = {}
-    for bill_name, day in list(cfg['due_dates'].items()):
-        c1, c2, c3 = st.columns([3, 1, 1])
-        with c1:
-            st.markdown(f"<span style='color:#94a3b8;font-size:13px;'>{bill_name}</span>", unsafe_allow_html=True)
-        with c2:
-            new_day = st.number_input("Day", value=day, min_value=1, max_value=31, key=f"due_{bill_name}", label_visibility="collapsed")
-        with c3:
-            del_due = st.button("🗑️", key=f"due_del_{bill_name}")
-        if not del_due:
-            updated_dues[bill_name] = new_day
-    
-    nc1, nc2, nc3 = st.columns([3, 1, 1])
-    with nc1:
-        new_due_name = st.text_input("Bill", key="new_due_name", placeholder="e.g. Rent", label_visibility="collapsed")
-    with nc2:
-        new_due_day = st.number_input("Day", value=1, min_value=1, max_value=31, key="new_due_day", label_visibility="collapsed")
-    with nc3:
-        if st.button("➕", key="add_due") and new_due_name.strip():
-            updated_dues[new_due_name.strip()] = new_due_day
-    
-    cfg['due_dates'] = updated_dues
-    
-    st.markdown("---")
-    
-    # === SAVE BUTTON ===
-    save_clicked = st.button("💾 Save Changes", use_container_width=True, type="primary")
-    
-    # Single save call (avoids duplicate element key)
-    save_config(localS, cfg)
-    
-    if save_clicked:
-        st.session_state['config_source'] = 'saved'
-        st.success("✅ Saved! Your settings are stored in this browser.")
-    elif st.session_state.get('config_source') == 'saved':
-        st.caption("✅ Settings saved in this browser")
-    
-    st.markdown("---")
-    
-    # === RESET ===
-    if st.button("🗑️ Reset Everything", use_container_width=True,
-        help="Clear all saved settings and start over with a blank slate."):
-        localS.deleteAll()
-        st.session_state['config'] = get_default_config()
-        st.session_state['config_source'] = 'default'
-        st.rerun()
-    
-    st.markdown("---")
-    
-    # === BACKUP / TRANSFER ===
-    with st.expander("📦 Backup & Transfer"):
-        st.caption("Move your settings to another device or browser.")
-        
-        config_json = json.dumps(cfg, indent=2)
-        st.download_button("⬇️ Download Backup", config_json, file_name="budget-settings.json",
-            mime="application/json", help="Save a backup file you can load on another device.")
-        
-        uploaded_config = st.file_uploader("⬆️ Load from Backup", type=['json'],
-            help="Upload a previously saved budget-settings.json file.", label_visibility="collapsed")
-        if uploaded_config:
-            try:
-                loaded = json.loads(uploaded_config.read().decode('utf-8'))
-                if 'monthly_income' in loaded and 'fixed_expenses' in loaded:
-                    st.session_state['config'] = loaded
-                    save_config(localS, loaded)
-                    st.success("✅ Settings loaded and saved!")
+        with st.expander("➕ Add a new category"):
+            new_cat = st.text_input("Category name", placeholder="e.g. Medical, Childcare")
+            if st.button("Create Category") and new_cat.strip():
+                if new_cat.strip() not in cfg['fixed_expenses']:
+                    cfg['fixed_expenses'][new_cat.strip()] = {}
                     st.rerun()
+        
+        st.markdown("---")
+        
+        # === ACCOUNTS ===
+        st.markdown("### 💰 Accounts & Balances")
+        st.caption("Update these whenever you check in.")
+        
+        updated_accounts = []
+        
+        cash_accounts = [a for a in cfg['accounts'] if a['type'] in ('checking', 'savings', 'investment')]
+        debt_accounts = [a for a in cfg['accounts'] if a['type'] in ('credit', 'loan')]
+        
+        st.markdown("#### 🏦 Cash & Savings")
+        st.caption("Money you have. Check your bank app for current balances.")
+        
+        for i, acct in enumerate(cash_accounts):
+            with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}"):
+                a_name = st.text_input("Account Name", value=acct['name'], key=f"cash_name_{i}",
+                    help="Whatever you call this account. e.g. 'Chase Checking' or 'Ally Savings'")
+                a_type = st.selectbox("Account Type", ['checking', 'savings', 'investment'],
+                    index=['checking', 'savings', 'investment'].index(acct['type']),
+                    format_func=lambda x: {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment / Retirement'}[x],
+                    key=f"cash_type_{i}")
+                a_balance = st.number_input("Current Balance ($)", value=acct['balance'], step=100, key=f"cash_bal_{i}",
+                    help="What your account shows right now.")
+                
+                delete_acct = st.button("🗑️ Remove", key=f"cash_del_{i}")
+                if not delete_acct:
+                    updated_accounts.append({'name': a_name, 'type': a_type, 'balance': a_balance, 'limit': 0})
+        
+        with st.expander("➕ Add a cash / savings account"):
+            na_name = st.text_input("Account name", placeholder="e.g. Ally Savings", key="new_cash_name")
+            na_type = st.selectbox("Type", ['checking', 'savings', 'investment'],
+                format_func=lambda x: {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment / Retirement'}[x],
+                key="new_cash_type")
+            na_balance = st.number_input("Current Balance ($)", value=0, step=100, key="new_cash_bal")
+            if st.button("Add Account", key="add_cash") and na_name.strip():
+                updated_accounts.append({'name': na_name.strip(), 'type': na_type, 'balance': na_balance, 'limit': 0})
+                st.rerun()
+        
+        st.markdown("#### 💳 Credit Cards & Loans")
+        st.caption("Money you owe. Balance is what you owe now. Limit is your max (credit cards) or what you originally borrowed (loans).")
+        
+        for i, acct in enumerate(debt_accounts):
+            pct = f" ({acct['balance']/acct['limit']*100:.0f}%)" if acct['limit'] > 0 else ""
+            with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}{pct}"):
+                a_name = st.text_input("Account Name", value=acct['name'], key=f"debt_name_{i}",
+                    help="e.g. 'Chase Visa', 'Car Loan', 'Student Loans'")
+                a_type = st.selectbox("Account Type", ['credit', 'loan'],
+                    index=['credit', 'loan'].index(acct['type']),
+                    format_func=lambda x: {'credit': '💳 Credit Card', 'loan': '🏦 Loan (car, student, personal, etc.)'}[x],
+                    key=f"debt_type_{i}")
+                a_balance = st.number_input("Current Balance Owed ($)", value=acct['balance'], step=100, min_value=0, key=f"debt_bal_{i}",
+                    help="What you currently owe. Check your latest statement or app.")
+                
+                if a_type == 'credit':
+                    a_limit = st.number_input("Credit Limit ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
+                        help="The maximum you're allowed to charge.")
                 else:
-                    st.error("Invalid settings file.")
-            except:
-                st.error("Could not read settings file.")
+                    a_limit = st.number_input("Original Loan Amount ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
+                        help="How much you originally borrowed.")
+                
+                delete_acct = st.button("🗑️ Remove", key=f"debt_del_{i}")
+                if not delete_acct:
+                    updated_accounts.append({'name': a_name, 'type': a_type, 'balance': a_balance, 'limit': a_limit})
+        
+        with st.expander("➕ Add a credit card or loan"):
+            nd_name = st.text_input("Account name", placeholder="e.g. Chase Visa, Car Loan", key="new_debt_name")
+            nd_type = st.selectbox("Type", ['credit', 'loan'],
+                format_func=lambda x: {'credit': '💳 Credit Card', 'loan': '🏦 Loan'}[x],
+                key="new_debt_type")
+            nd_balance = st.number_input("Balance Owed ($)", value=0, step=100, min_value=0, key="new_debt_bal")
+            if nd_type == 'credit':
+                nd_limit = st.number_input("Credit Limit ($)", value=0, step=100, min_value=0, key="new_debt_lim")
+            else:
+                nd_limit = st.number_input("Original Loan Amount ($)", value=0, step=100, min_value=0, key="new_debt_lim")
+            if st.button("Add Account", key="add_debt") and nd_name.strip():
+                updated_accounts.append({'name': nd_name.strip(), 'type': nd_type, 'balance': nd_balance, 'limit': nd_limit})
+                st.rerun()
+        
+        cfg['accounts'] = updated_accounts
+        
+        st.markdown("---")
+        
+        # === DUE DATES ===
+        st.markdown("### 📅 Bill Due Dates")
+        st.caption("Day of the month each bill is due.")
+        
+        updated_dues = {}
+        for bill_name, day in list(cfg['due_dates'].items()):
+            c1, c2, c3 = st.columns([3, 1, 1])
+            with c1:
+                st.markdown(f"<span style='color:#94a3b8;font-size:13px;'>{bill_name}</span>", unsafe_allow_html=True)
+            with c2:
+                new_day = st.number_input("Day", value=day, min_value=1, max_value=31, key=f"due_{bill_name}", label_visibility="collapsed")
+            with c3:
+                del_due = st.button("🗑️", key=f"due_del_{bill_name}")
+            if not del_due:
+                updated_dues[bill_name] = new_day
+        
+        nc1, nc2, nc3 = st.columns([3, 1, 1])
+        with nc1:
+            new_due_name = st.text_input("Bill", key="new_due_name", placeholder="e.g. Rent", label_visibility="collapsed")
+        with nc2:
+            new_due_day = st.number_input("Day", value=1, min_value=1, max_value=31, key="new_due_day", label_visibility="collapsed")
+        with nc3:
+            if st.button("➕", key="add_due") and new_due_name.strip():
+                updated_dues[new_due_name.strip()] = new_due_day
+        
+        cfg['due_dates'] = updated_dues
+        
+        st.markdown("---")
+        
+        # === SAVE BUTTON ===
+        save_clicked = st.button("💾 Save Changes", use_container_width=True, type="primary")
+        
+        save_config(localS, cfg)
+        
+        if save_clicked:
+            st.session_state['config_source'] = 'saved'
+            st.success("✅ Saved! Your settings are stored in this browser.")
+        elif st.session_state.get('config_source') == 'saved':
+            st.caption("✅ Settings saved in this browser")
+        
+        st.markdown("---")
+        
+        # === RESET ===
+        if st.button("🗑️ Reset Everything", use_container_width=True,
+            help="Clear all saved settings and start over with a blank slate."):
+            localS.deleteAll()
+            st.session_state['config'] = get_default_config()
+            st.session_state['config_source'] = 'default'
+            st.rerun()
+        
+        st.markdown("---")
+        
+        # === BACKUP / TRANSFER ===
+        with st.expander("📦 Backup & Transfer"):
+            st.caption("Move your settings to another device or browser.")
+            
+            config_json = json.dumps(cfg, indent=2)
+            st.download_button("⬇️ Download Backup", config_json, file_name="budget-settings.json",
+                mime="application/json", help="Save a backup file you can load on another device.")
+            
+            uploaded_config = st.file_uploader("⬆️ Load from Backup", type=['json'],
+                help="Upload a previously saved budget-settings.json file.", label_visibility="collapsed")
+            if uploaded_config:
+                try:
+                    loaded = json.loads(uploaded_config.read().decode('utf-8'))
+                    if 'monthly_income' in loaded and 'fixed_expenses' in loaded:
+                        st.session_state['config'] = loaded
+                        save_config(localS, loaded)
+                        st.success("✅ Settings loaded and saved!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid settings file.")
+                except:
+                    st.error("Could not read settings file.")
 
 
 # ========================
@@ -606,23 +602,30 @@ cfg = st.session_state['config']
 transactions = None
 is_demo = False
 
-# Settings always come from the sidebar
-FIXED_EXPENSES = cfg['fixed_expenses']
-ACCOUNTS = cfg['accounts']
-DUE_DATES = cfg['due_dates']
-FAMILY_NAME = cfg['family_name']
-MONTHLY_INCOME = cfg['monthly_income']
-
-if data_mode == "🎲 Demo Data (Sample)":
+if data_mode == "🎲 Demo":
     transactions = generate_months_of_data(6)
     is_demo = True
+    FIXED_EXPENSES = DEMO_FIXED_EXPENSES
+    ACCOUNTS = DEMO_ACCOUNTS
+    DUE_DATES = DEMO_DUE_DATES
+    FAMILY_NAME = "Anderson"
+    MONTHLY_INCOME = 9200
     badge_class = "demo-badge"
-    badge_text = "⚡ Demo Transactions — Your Settings"
+    badge_text = "⚡ Demo Mode — Sample Data"
 else:
+    is_demo = False
+    FIXED_EXPENSES = cfg['fixed_expenses']
+    ACCOUNTS = cfg['accounts']
+    DUE_DATES = cfg['due_dates']
+    FAMILY_NAME = cfg['family_name']
+    MONTHLY_INCOME = cfg['monthly_income']
     badge_class = "custom-badge"
-    badge_text = "✅ Your Data"
+    badge_text = "💰 My Budget"
     
-    uploaded_file = st.sidebar.file_uploader("📄 Upload Transaction CSV", type=['csv'],
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📄 Transactions (Optional)")
+    st.sidebar.caption("Upload a CSV from your bank to see spending breakdowns and transaction history.")
+    uploaded_file = st.sidebar.file_uploader("Upload CSV", type=['csv'],
         help="Export transactions from your bank or credit card.")
     
     if uploaded_file:
