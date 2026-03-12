@@ -469,12 +469,37 @@ with st.sidebar:
                         st.rerun()
                 
                 st.markdown("---")
-                if st.button(f"🗑️ Delete entire {cat_name} category", key=f"del_cat_{cat_name}", use_container_width=True):
-                    del cfg['fixed_expenses'][cat_name]
-                    st.session_state['open_expense_cat'] = None
-                    st.rerun()
+                confirm_del_key = f"confirm_del_cat_{cat_name}"
+                if confirm_del_key not in st.session_state:
+                    st.session_state[confirm_del_key] = False
+                
+                if not st.session_state[confirm_del_key]:
+                    if st.button(f"🗑️ Delete {cat_name}", key=f"del_cat_{cat_name}", use_container_width=True):
+                        if updated_items:
+                            st.session_state[confirm_del_key] = True
+                            st.session_state['open_expense_cat'] = cat_name
+                            st.rerun()
+                        else:
+                            del cfg['fixed_expenses'][cat_name]
+                            st.session_state['open_expense_cat'] = None
+                            st.rerun()
                 else:
-                    cfg['fixed_expenses'][cat_name] = updated_items
+                    bill_count = len(updated_items)
+                    st.warning(f"⚠️ This will delete **{cat_name}** and its **{bill_count} bill{'s' if bill_count != 1 else ''}**.")
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if st.button("Yes, delete all", key=f"yes_del_cat_{cat_name}", use_container_width=True, type="primary"):
+                            del cfg['fixed_expenses'][cat_name]
+                            st.session_state[confirm_del_key] = False
+                            st.session_state['open_expense_cat'] = None
+                            st.rerun()
+                    with c2:
+                        if st.button("Cancel", key=f"no_del_cat_{cat_name}", use_container_width=True):
+                            st.session_state[confirm_del_key] = False
+                            st.session_state['open_expense_cat'] = cat_name
+                            st.rerun()
+                
+                cfg['fixed_expenses'][cat_name] = updated_items
         
         with st.expander("➕ Add a new category"):
             new_cat = st.text_input("Category name", placeholder="e.g. Medical, Childcare")
