@@ -1,6 +1,6 @@
 # 💰 Family Budget Dashboard
 
-A beautiful, dark-themed family budget dashboard built with Streamlit and Plotly. Works out of the box with demo data, or connect your own financial data via CSV upload or Google Sheets.
+A beautiful, dark-themed family budget dashboard built with Streamlit and Plotly. Works out of the box with demo data, or connect your own financial data via CSV upload.
 
 **[🚀 Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** — Try it now with sample data
 
@@ -11,221 +11,248 @@ A beautiful, dark-themed family budget dashboard built with Streamlit and Plotly
 
 - **📊 KPI Cards** — Spendable balance, credit card status, savings, income, investments
 - **🍩 Spending Breakdown** — Interactive donut chart by category
-- **🎯 Budget Health Gauge** — Visual indicator of budget utilization (green/yellow/red)
+- **🎯 Budget Health Gauge** — Visual budget health (green/yellow/red)
 - **🔍 Category Drill-Down** — Click into any category to see sub-categories and individual transactions
 - **📋 Fixed Expense Panels** — Expandable breakdowns of recurring bills
 - **💳 Debt Tracking** — Progress bars for credit cards and loans
 - **📅 Due Date Calendar** — Upcoming bills with paid/due soon/upcoming status
-- **🧾 Transaction History** — Paginated, sortable transaction table
+- **🧾 Transaction History** — Paginated transaction table
 - **📆 Month Selector** — View current month, past months, or year-to-date
+- **💾 Auto-Save** — Settings save automatically in your browser. Come back tomorrow, everything's still there.
 - **🌙 Dark Theme** — Polished dark UI with glassmorphism effects
 
 ## 🆕 New to Budgeting?
 
-Check out the **[Getting Started Guide](GETTING-STARTED.md)** -- walks you through everything from figuring out your income and expenses to deploying your own dashboard. No finance background needed. Includes template files to get you started.
-
-## Three Ways to Use It
-
-### 1. 🎲 Demo Mode (Default)
-Just run it. Six months of realistic fake transactions are generated automatically. Great for showcasing what the dashboard looks like.
-
-### 2. 📄 CSV Upload
-Drag and drop a CSV export from your bank, credit card, Mint, YNAB, or any financial tool. The parser auto-detects common column formats.
-
-### 3. 🔗 Google Sheets (Auto-Sync)
-Connect to a Google Sheet for always-up-to-date data. Works great with [Finta](https://www.finta.io/) (auto-syncs bank accounts to Google Sheets) or any spreadsheet with transaction data.
+Check out the **[Getting Started Guide](GETTING-STARTED.md)** — a step-by-step walkthrough from "I've never tracked money" to a working dashboard. No finance background needed. No coding.
 
 ---
 
-## Quick Start
+## How to Use It
 
-### Run Locally
-```bash
-git clone https://github.com/spencerjw/budget-dashboard-demo.git
-cd budget-dashboard-demo
-pip install -r requirements.txt
-streamlit run app.py
-```
+### Just Want to See the Demo?
+Click the **[Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** link. It loads with 6 months of realistic sample data. Nothing to install.
 
-### Deploy to Streamlit Cloud (Free)
-1. Fork this repo
-2. Go to [share.streamlit.io](https://share.streamlit.io)
-3. Select your fork, set `app.py` as entrypoint
-4. Click **Deploy** — no secrets needed for demo mode
+### Want to Track Your Own Budget?
 
----
+**Everything is done through the sidebar — no code to edit.**
 
-## Connecting Your Own Data
+1. Open the [dashboard](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)
+2. Click the **>** arrow (top left) to open the sidebar
+3. Switch from "Demo Data" to "Upload My CSV"
+4. Fill in your income, bills, accounts, and due dates using the forms
+5. Your settings **auto-save in your browser** — they'll be there next time you visit
+6. Optionally upload a CSV from your bank to see your spending breakdown
 
-### Option A: CSV Upload (Easiest)
-
-Export transactions from your bank or financial tool and upload directly in the app sidebar.
-
-**Supported formats:**
-| Source | How to Export |
-|--------|-------------|
-| **Chase** | Activity → Download → CSV |
-| **Amex** | Statements → Download → CSV |
-| **Bank of America** | Activity → Export/Download |
-| **Mint** | Transactions → Export → CSV |
-| **YNAB** | All Accounts → Export → CSV |
-| **Any bank** | Look for "Download" or "Export" in transaction history |
-
-**Required CSV columns** (names are flexible, parser auto-detects):
-- **Date** — Transaction date (`Date`, `Transaction Date`, `Posted Date`, etc.)
-- **Amount** — Dollar amount (`Amount`, `Debit`, `Transaction Amount`, etc.)
-- **Description** *(optional but recommended)* — Merchant name (`Description`, `Merchant`, `Payee`, `Name`, etc.)
-- **Category** *(optional)* — Spending category (`Category`, `Category Name`, `Type`, etc.)
-
-Example CSV:
-```csv
-Date,Amount,Description,Category
-2025-03-01,-45.23,H-E-B Grocery,Groceries
-2025-03-02,-12.50,Chipotle Mexican Grill,Restaurants
-2025-03-03,-35.00,Shell Gas Station,Gas & Auto
-2025-03-05,-89.99,Amazon.com,Shopping
-2025-03-07,3200.00,Direct Deposit Payroll,Income
-```
-
-> **Note:** Negative amounts = spending, positive = income/credits. If your bank exports all amounts as positive, the parser handles that automatically.
-
-### Option B: Google Sheets (Auto-Sync with Finta)
-
-This is the most powerful setup — your dashboard updates automatically as transactions come in.
-
-#### Step 1: Set Up Finta ($5.83/month)
-1. Sign up at [finta.io](https://www.finta.io/)
-2. Connect your bank accounts via Plaid
-3. Finta creates a Google Sheet and auto-syncs transactions daily
-
-#### Step 2: Create a Google Cloud Service Account
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or use existing)
-3. Enable the **Google Sheets API**
-4. Go to **IAM & Admin → Service Accounts** → Create Service Account
-5. Create a JSON key and download it
-6. **Share your Finta Google Sheet** with the service account email (read-only is fine)
-
-#### Step 3: Configure the Dashboard
-
-**For local development:**
-```bash
-# In the sidebar, select "Google Sheets" mode
-# Paste your Sheet ID and upload the JSON key file
-```
-
-**For Streamlit Cloud deployment:**
-
-Create `.streamlit/secrets.toml` (don't commit this!):
-```toml
-[gcp_service_account]
-type = "service_account"
-project_id = "your-project-id"
-private_key_id = "key-id"
-private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-client_email = "your-sa@your-project.iam.gserviceaccount.com"
-client_id = "123456789"
-auth_uri = "https://accounts.google.com/o/oauth2/auth"
-token_uri = "https://oauth2.googleapis.com/token"
-```
-
-Or paste the same values into Streamlit Cloud's Secrets management UI.
-
-#### Expected Google Sheet Format
-
-The dashboard expects sheets named `Transactions` (and optionally `Accounts`) with these columns:
-
-**Transactions sheet:**
-| Column | Description |
-|--------|------------|
-| Date | Transaction date |
-| Amount | Dollar amount (negative = spending) |
-| Merchant or Summary | Transaction description |
-| Category Name | Sub-category (e.g., "Groceries") |
-| Category Group | Parent category (e.g., "Food & Drink") |
-
-**Accounts sheet** *(optional, for balance cards):*
-| Column | Description |
-|--------|------------|
-| Name | Account name |
-| Current Balance | Current balance |
-| Account Limit | Credit limit (for credit cards) |
-| Account Type | "credit", "depository", "investment", etc. |
-
-> Finta generates this format automatically. If using a custom sheet, match these column names.
+That's it. No account to create, no software to install, no code to write.
 
 ---
 
-## Customization
+## Uploading Your Transactions (CSV)
 
-Edit the constants at the top of `app.py` (or use the sidebar):
+This powers the spending donut chart, category drill-down, and transaction history. It's optional — the dashboard works without it.
 
-```python
-DEFAULT_FAMILY_NAME = "Anderson"     # Dashboard title
-DEFAULT_MONTHLY_INCOME = 9200        # Combined household income
+### How to Get Your CSV
 
-DEFAULT_FIXED_EXPENSES = {           # Your recurring monthly bills
-    'Household': {
-        'Electric': 218,
-        'Internet': 65,
-        # ... add your bills
-    },
-    'Debt Payments': {
-        'Mortgage': 2890,
-        # ... add your debts
-    },
-}
-```
+1. **Log into your bank's website** (or credit card website)
+2. **Go to your transaction history** (usually called "Activity" or "Transactions")
+3. **Look for a "Download" or "Export" button** — choose **CSV** format
+4. **In the dashboard sidebar**, click the file upload area and select your downloaded CSV
 
-### Adding More Account Cards
-To add real account balances (from Google Sheets), modify the `get_account_balances()` function to match your account names.
+**Where to find the download button at common banks:**
 
-### Changing Categories
-The demo data uses predefined categories. When using CSV or Google Sheets, categories come from your data. The donut chart and drill-down adapt automatically.
+| Bank / Card | Where to Look |
+|-------------|--------------|
+| **Chase** | Log in → Activity → click the ⬇️ download icon at the top → choose CSV |
+| **Bank of America** | Log in → Activity tab → "Download" link near the top right → CSV |
+| **Wells Fargo** | Log in → Account Activity → "Download" button → Comma Delimited |
+| **Capital One** | Log in → "View Transactions" → "Download Transactions" link → CSV |
+| **Amex** | Log in → "Statements & Activity" → "Download your Transactions" → CSV |
+| **USAA** | Log in → Transactions tab → "Export" button → CSV |
+| **Discover** | Log in → "Recent Activity" → "Download" → CSV |
+| **Citi** | Log in → "View Account Activity" → "Download" link → CSV |
+| **Credit unions** | Look for "Export," "Download," or "Save Transactions" in your transaction history |
+
+**Tip:** If you use a credit card for most purchases, download those transactions — that's where most of your spending data lives.
+
+**Tip:** Most banks let you filter by date range. Download the current month, or the last 3 months if you want more history.
+
+### What Format Does the CSV Need?
+
+The dashboard auto-detects most bank formats. It looks for columns like:
+
+- A **date** column (called "Date," "Transaction Date," "Posted Date," etc.)
+- An **amount** column (called "Amount," "Debit," "Transaction Amount," etc.)
+- A **description** column (called "Description," "Merchant," "Payee," "Name," etc.)
+- A **category** column (optional — called "Category," "Type," etc.)
+
+If your bank's CSV has these columns (most do), it'll work. You don't need to rename anything.
+
+**Example of what a CSV looks like if you open it in Excel or Google Sheets:**
+
+| Date | Amount | Description | Category |
+|------|--------|-------------|----------|
+| 2025-03-01 | -45.23 | H-E-B Grocery | Groceries |
+| 2025-03-02 | -12.50 | Chipotle | Restaurants |
+| 2025-03-03 | -35.00 | Shell Gas | Gas |
+| 2025-03-07 | 3,200.00 | Direct Deposit | Income |
+
+Negative = money you spent. Positive = money you received. If your bank shows all amounts as positive, the dashboard handles that automatically.
 
 ---
 
-## Tech Stack
+## Saving Your Settings
 
-- **[Streamlit](https://streamlit.io/)** — App framework
-- **[Plotly](https://plotly.com/)** — Interactive charts (donut, gauge)
-- **[Pandas](https://pandas.pydata.org/)** — Data handling
-- **[Google Sheets API](https://developers.google.com/sheets/api)** *(optional)* — Live data connection
+**Your settings save automatically.** When you fill in your income, bills, accounts, and due dates in the sidebar, they're stored in your browser. Close the tab, come back tomorrow — everything's still there.
 
-## Requirements
+**Switching devices?** (e.g., set it up on your laptop, want to use on your phone)
+1. On the device that has your settings: open the sidebar → "Backup & Transfer" → "Download Backup"
+2. On the new device: open the sidebar → "Backup & Transfer" → upload the file
 
-```
-streamlit>=1.30.0
-plotly>=5.18.0
-pandas>=2.0.0
-google-api-python-client>=2.100.0  # Only for Google Sheets mode
-google-auth>=2.23.0                # Only for Google Sheets mode
-```
+**Clearing your browser data** (history, cookies, etc.) will erase your settings. Use the backup option if you do this regularly.
+
+---
+
+## Auto-Sync with Finta (Advanced — Optional)
+
+> **This section is for people comfortable with Google accounts and spreadsheets.** Most people should stick with CSV upload — it's simpler and works great. Come back to this if you want the dashboard to update automatically without manual CSV uploads.
+
+[Finta](https://www.finta.io/) is a service ($5.83/month) that connects to your bank accounts and automatically writes your transactions into a Google Sheet every day. Pair it with this dashboard and you never have to manually download CSVs again.
+
+### What You'll Need
+
+- A Google account (Gmail)
+- A credit card for the Finta subscription ($5.83/month)
+- About 30 minutes for the initial setup
+
+### Step 1: Sign Up for Finta
+
+1. Go to **[finta.io](https://www.finta.io/)** and click "Get Started"
+2. Create an account with your email
+3. Finta will ask you to connect your bank accounts. It uses **Plaid** to do this — the same secure service that Venmo, Cash App, and most financial apps use. Your bank login credentials go to Plaid, not to Finta.
+4. Select which accounts you want to sync (checking, savings, credit cards — whatever you want to track)
+5. Finta will ask you to connect a Google Sheet. Sign in with your Google account and give it permission.
+6. Finta creates a Google Sheet in your Google Drive called something like "Finta - Transactions." **Leave this sheet alone** — Finta updates it automatically.
+
+After setup, Finta syncs your transactions daily. You can see them in the Google Sheet anytime by going to [drive.google.com](https://drive.google.com) and opening the Finta sheet.
+
+### Step 2: Create a Google Service Account (So the Dashboard Can Read Your Sheet)
+
+The dashboard needs permission to read your Google Sheet. You do this by creating a "service account" — think of it as a read-only robot that can see your spreadsheet.
+
+1. Go to **[console.cloud.google.com](https://console.cloud.google.com/)**
+2. If you've never used Google Cloud before, it'll ask you to agree to terms. Do that. **You will not be charged** — this is all within the free tier.
+3. At the top of the page, you'll see a project dropdown (might say "My First Project" or "Select a project"). Click it.
+4. Click **"New Project"** in the top right of the popup
+5. Name it anything — "Budget Dashboard" works fine. Click **"Create"**
+6. Wait a few seconds for it to create, then make sure it's selected in the dropdown at the top
+
+**Now enable the Google Sheets API:**
+
+7. In the search bar at the top of Google Cloud Console, type **"Google Sheets API"** and press Enter
+8. Click on **"Google Sheets API"** in the results
+9. Click the big blue **"Enable"** button. Wait a few seconds.
+
+**Now create the service account:**
+
+10. In the search bar, type **"Service Accounts"** and click on **"Service Accounts"** under "IAM & Admin"
+11. Click **"+ Create Service Account"** at the top
+12. For "Service account name," type **"budget-reader"** (or anything you want)
+13. Click **"Create and Continue"**
+14. For "Role," you can skip this — just click **"Continue"**
+15. Click **"Done"**
+
+**Now get the key file:**
+
+16. You'll see your new service account in the list. Click on it (click the email address).
+17. Click the **"Keys"** tab at the top
+18. Click **"Add Key"** → **"Create new key"**
+19. Select **"JSON"** and click **"Create"**
+20. A file will download to your computer. **This is your key file.** Keep it safe — anyone with this file can read your spreadsheet.
+
+### Step 3: Share Your Sheet with the Service Account
+
+1. Open the key file you just downloaded (it's a .json file). You can open it with any text editor (Notepad on Windows, TextEdit on Mac). Look for the line that says `"client_email":` — it'll be something like `budget-reader@budget-dashboard-12345.iam.gserviceaccount.com`. **Copy that whole email address.**
+2. Go to **[drive.google.com](https://drive.google.com)** and open your Finta Google Sheet
+3. Click the **"Share"** button (top right)
+4. Paste the service account email address you copied
+5. Make sure it's set to **"Viewer"** (not Editor — it only needs to read)
+6. Uncheck "Notify people" (it's a robot, it doesn't have email)
+7. Click **"Share"**
+
+### Step 4: Connect It to the Dashboard
+
+1. Open the dashboard and go to the sidebar
+2. Switch to **"🔗 Google Sheets"** mode
+3. You need your **Sheet ID** — this is the long random string in your Google Sheet's URL. For example, if your sheet URL is:
+   `https://docs.google.com/spreadsheets/d/1ABC123xyz789/edit`
+   Then your Sheet ID is: `1ABC123xyz789`
+   Copy everything between `/d/` and `/edit`
+4. Paste the Sheet ID into the dashboard
+5. Upload the JSON key file you downloaded in Step 2
+6. The dashboard should load your data. If it says "Connected," you're done!
+
+### Troubleshooting Finta/Sheets Connection
+
+**"Google Sheets error" or "Permission denied":**
+- Make sure you shared the sheet with the service account email (Step 3). The email has to match exactly.
+- Make sure the Google Sheets API is enabled (Step 2, item 9). Go back to console.cloud.google.com, search "Google Sheets API," and verify it says "Enabled."
+
+**"Could not find date and amount columns":**
+- Your Finta sheet may have different column names than expected. Open the sheet in Google Drive and check that it has columns for Date, Amount, and Description/Merchant.
+
+**"No transactions loaded":**
+- Finta may take up to 24 hours to sync after initial setup. Check the Google Sheet directly — if it's empty, wait for Finta to populate it.
+
+**Some banks don't work with Finta:**
+- Smaller credit unions and some regional banks aren't supported by Plaid (which Finta uses). If your bank isn't supported, use the CSV upload method instead.
+
+---
+
+## Deploy Your Own Private Copy
+
+If you want your own dashboard URL (instead of using the shared demo), you can deploy a free copy:
+
+1. Create free accounts at **[github.com](https://github.com)** and **[streamlit.io](https://streamlit.io)**
+2. Go to the [dashboard repo](https://github.com/spencerjw/budget-dashboard-demo) and click **"Fork"** (top right)
+3. Go to **[share.streamlit.io](https://share.streamlit.io)** and click **"New app"**
+4. Select your fork, branch `main`, file `app.py`
+5. Click **Deploy**
+
+Your dashboard will be live at its own URL. Set it to **invite-only** in Settings → Sharing if you're entering real financial data (you should).
 
 ---
 
 ## FAQ
 
-**Q: Is my data stored anywhere?**
-A: No. CSV uploads are processed in-memory and never saved. Google Sheets connections are read-only. Nothing is logged or transmitted.
+**Is my data stored on a server somewhere?**
+No. Your settings save in your browser's local storage — they never leave your device. CSV uploads are processed in-memory and aren't saved anywhere. The Google Sheets connection is read-only.
 
-**Q: Can I use this without Finta?**
-A: Absolutely. CSV upload works with any bank export. You can also connect any Google Sheet — Finta is just one way to automate the data pipeline.
+**Can I use this on my phone?**
+Yes. Open the URL in your phone's browser. The layout adjusts automatically.
 
-**Q: Does it work on mobile?**
-A: Yes. The layout is responsive and works on phones and tablets.
+**What if I clear my browser history/cookies?**
+Your saved settings may be erased. Use the "Backup & Transfer" option in the sidebar to download a backup file first.
 
-**Q: Can I add more charts / features?**
-A: Fork it and go wild. The codebase is a single `app.py` file — easy to modify.
+**Can I track multiple bank accounts?**
+Yes. Download CSVs from each account and upload them one at a time, or use Finta to sync multiple accounts into one Google Sheet automatically.
+
+**Does it work without uploading any CSV?**
+Yes. You can enter your income, bills, accounts, and due dates in the sidebar and the dashboard shows your budget overview, debt progress, and due dates. The spending breakdown and transaction history need transaction data (CSV or Google Sheets).
 
 ---
 
 ## Templates
 
-The `templates/` folder includes starter files:
+The `templates/` folder includes starter files if you want to see example formats:
 - **`fixed-expenses-template.csv`** — Common recurring bills with examples and notes
 - **`transactions-template.csv`** — Sample transaction data showing the expected CSV format
 - **`accounts-template.csv`** — Account balances template (checking, savings, credit cards, loans)
+
+## Tech Stack
+
+- **[Streamlit](https://streamlit.io/)** — App framework
+- **[Plotly](https://plotly.com/)** — Interactive charts
+- **[Pandas](https://pandas.pydata.org/)** — Data handling
 
 ## License
 
