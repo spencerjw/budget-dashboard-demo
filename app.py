@@ -606,22 +606,19 @@ cfg = st.session_state['config']
 transactions = None
 is_demo = False
 
+# Settings always come from the sidebar
+FIXED_EXPENSES = cfg['fixed_expenses']
+ACCOUNTS = cfg['accounts']
+DUE_DATES = cfg['due_dates']
+FAMILY_NAME = cfg['family_name']
+MONTHLY_INCOME = cfg['monthly_income']
+
 if data_mode == "🎲 Demo Data (Sample)":
     transactions = generate_months_of_data(6)
     is_demo = True
-    FIXED_EXPENSES = DEMO_FIXED_EXPENSES
-    ACCOUNTS = DEMO_ACCOUNTS
-    DUE_DATES = DEMO_DUE_DATES
-    FAMILY_NAME = "Anderson"
-    MONTHLY_INCOME = 9200
     badge_class = "demo-badge"
-    badge_text = "⚡ Demo Mode — Sample Data"
+    badge_text = "⚡ Demo Transactions — Your Settings"
 else:
-    FIXED_EXPENSES = cfg['fixed_expenses']
-    ACCOUNTS = cfg['accounts']
-    DUE_DATES = cfg['due_dates']
-    FAMILY_NAME = cfg['family_name']
-    MONTHLY_INCOME = cfg['monthly_income']
     badge_class = "custom-badge"
     badge_text = "✅ Your Data"
     
