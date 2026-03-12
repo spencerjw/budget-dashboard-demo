@@ -271,42 +271,36 @@ def render_progress(name, balance, limit):
     st.markdown(f'''<div class="progress-container"><div class="progress-header"><span class="progress-name">{name}</span><span class="progress-stats" style="color:{color}">${balance:,.0f} / ${limit:,.0f} &nbsp; ({pct:.0f}%)</span></div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:{min(pct,100)}%; background: linear-gradient(90deg, {color}, {color}88);"></div></div></div>''', unsafe_allow_html=True)
 
 
-def make_donut(spending_df, is_dark=True):
-    text_color = '#e2e8f0' if is_dark else '#1e293b'
-    muted_color = '#94a3b8' if is_dark else '#64748b'
-    slice_border = 'rgba(10,14,26,0.8)' if is_dark else 'rgba(255,255,255,0.9)'
+def make_donut(spending_df):
     if spending_df.empty:
         fig = go.Figure()
-        fig.add_annotation(text="No transactions yet", x=0.5, y=0.5, showarrow=False, font=dict(size=16, color=muted_color))
+        fig.add_annotation(text="No transactions yet", x=0.5, y=0.5, showarrow=False, font=dict(size=16, color='#64748b'))
         fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=380, margin=dict(l=0, r=0, t=0, b=0))
         return fig
     by_group = spending_df.groupby('Category Group')['spend'].sum().reset_index().sort_values('spend', ascending=False)
     by_group = by_group[by_group['spend'] > 0]
     colors = ['#60a5fa', '#34d399', '#fbbf24', '#fb7185', '#a78bfa', '#fb923c', '#2dd4bf', '#f472b6', '#818cf8', '#94a3b8', '#22d3ee', '#84cc16']
     fig = go.Figure(data=[go.Pie(labels=by_group['Category Group'], values=by_group['spend'], hole=0.6,
-        marker=dict(colors=colors[:len(by_group)], line=dict(color=slice_border, width=3)),
-        textinfo='percent', textfont=dict(size=12, color=text_color, family='Inter'),
+        marker=dict(colors=colors[:len(by_group)], line=dict(color='rgba(10,14,26,0.8)', width=3)),
+        textinfo='percent', textfont=dict(size=12, color='#e2e8f0', family='Inter'),
         hovertemplate='<b>%{label}</b><br>$%{value:,.0f}<br>%{percent}<extra></extra>',
         pull=[0.015]*len(by_group), direction='clockwise', sort=True)])
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color=text_color, family='Inter'), height=380, margin=dict(l=10, r=10, t=10, b=10),
-        legend=dict(font=dict(size=11, color=muted_color, family='Inter'), bgcolor='rgba(0,0,0,0)', orientation='v', yanchor='middle', y=0.5, itemclick=False, itemdoubleclick=False), showlegend=True)
+        font=dict(color='#e2e8f0', family='Inter'), height=380, margin=dict(l=10, r=10, t=10, b=10),
+        legend=dict(font=dict(size=11, color='#94a3b8', family='Inter'), bgcolor='rgba(0,0,0,0)', orientation='v', yanchor='middle', y=0.5, itemclick=False, itemdoubleclick=False), showlegend=True)
     return fig
 
 
-def make_budget_gauge(used_pct, is_dark=True):
-    text_color = '#e2e8f0' if is_dark else '#1e293b'
-    gauge_bg = 'rgba(255,255,255,0.04)' if is_dark else 'rgba(0,0,0,0.04)'
-    step_alpha = '0.1' if is_dark else '0.15'
+def make_budget_gauge(used_pct):
     display_pct = min(used_pct, 120)
     bar_color = '#34d399' if used_pct <= 60 else ('#fbbf24' if used_pct <= 85 else '#fb7185')
     fig = go.Figure(go.Indicator(mode="gauge+number", value=display_pct,
         number={'suffix': '%', 'font': {'size': 42, 'color': bar_color, 'family': 'Inter'}},
         gauge={'axis': {'range': [0, 120], 'tickwidth': 0, 'tickcolor': 'rgba(0,0,0,0)', 'tickfont': {'color': 'rgba(0,0,0,0)'}},
-            'bar': {'color': bar_color, 'thickness': 0.3}, 'bgcolor': gauge_bg, 'borderwidth': 0,
-            'steps': [{'range': [0, 60], 'color': f'rgba(52,211,153,{step_alpha})'}, {'range': [60, 85], 'color': f'rgba(251,191,36,{step_alpha})'}, {'range': [85, 120], 'color': f'rgba(251,113,133,{step_alpha})'}]}))
+            'bar': {'color': bar_color, 'thickness': 0.3}, 'bgcolor': 'rgba(255,255,255,0.04)', 'borderwidth': 0,
+            'steps': [{'range': [0, 60], 'color': 'rgba(52,211,153,0.1)'}, {'range': [60, 85], 'color': 'rgba(251,191,36,0.1)'}, {'range': [85, 120], 'color': 'rgba(251,113,133,0.1)'}]}))
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color=text_color, family='Inter'), height=200, margin=dict(l=30, r=30, t=30, b=0))
+        font=dict(color='#e2e8f0', family='Inter'), height=200, margin=dict(l=30, r=30, t=30, b=0))
     return fig
 
 
@@ -315,112 +309,47 @@ def make_budget_gauge(used_pct, is_dark=True):
 # ========================
 st.set_page_config(page_title="Family Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="expanded")
 
-# Theme selection (stored in session state)
-if 'theme' not in st.session_state:
-    st.session_state['theme'] = 'dark'
-
-is_dark = st.session_state['theme'] == 'dark'
-
-# Base CSS (shared)
-BASE_CSS = """
+st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    .stApp { background: linear-gradient(160deg, #0a0e1a 0%, #111827 40%, #0f172a 100%); color: #e2e8f0; font-family: 'Inter', sans-serif; }
     #MainMenu, footer {visibility: hidden;}
-    [data-testid="stHeader"] { background: {header_bg} !important; }
+    [data-testid="stHeader"] { background: rgba(10,14,26,0.95) !important; }
     .block-container { padding-top: 3.5rem !important; max-width: 1200px; }
-    .stApp { background: {app_bg}; color: {text_primary}; font-family: 'Inter', sans-serif; }
-    .kpi-card { background: {card_bg}; border-radius: 20px; padding: 28px 20px; text-align: center; box-shadow: {card_shadow}; border: 1px solid {card_border}; backdrop-filter: blur(10px); margin-bottom: 12px; transition: transform 0.2s ease; }
+    .kpi-card { background: linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%); border-radius: 20px; padding: 28px 20px; text-align: center; box-shadow: 0 4px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(10px); margin-bottom: 12px; transition: transform 0.2s ease; }
     .kpi-card:hover { transform: translateY(-2px); }
-    .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; color: {text_muted}; }
+    .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; color: #64748b; }
     .kpi-value { font-size: 38px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
-    .kpi-sub { font-size: 11px; color: {text_muted}; line-height: 1.3; }
-    .green { color: {green}; } .red { color: {red}; } .blue { color: {blue}; }
-    .yellow { color: {yellow}; } .orange { color: {orange}; } .purple { color: {purple}; } .teal { color: {teal}; }
-    .section-header { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: {text_muted}; margin: 36px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid {divider}; }
-    .progress-container { background: {row_bg}; border-radius: 14px; padding: 18px 22px; margin-bottom: 10px; border: 1px solid {card_border}; }
+    .kpi-sub { font-size: 11px; color: #64748b; line-height: 1.3; }
+    .green { color: #34d399; } .red { color: #fb7185; } .blue { color: #60a5fa; }
+    .yellow { color: #fbbf24; } .orange { color: #fb923c; } .purple { color: #a78bfa; } .teal { color: #2dd4bf; }
+    .section-header { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #64748b; margin: 36px 0 16px 0; padding-bottom: 10px; border-bottom: 1px solid rgba(71,85,105,0.3); }
+    .progress-container { background: rgba(15,23,42,0.6); border-radius: 14px; padding: 18px 22px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.04); }
     .progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-    .progress-name { font-size: 14px; font-weight: 600; color: {text_secondary}; }
+    .progress-name { font-size: 14px; font-weight: 600; color: #cbd5e1; }
     .progress-stats { font-size: 13px; font-weight: 600; }
-    .progress-bar-track { background: {track_bg}; border-radius: 6px; height: 10px; overflow: hidden; }
+    .progress-bar-track { background: rgba(255,255,255,0.06); border-radius: 6px; height: 10px; overflow: hidden; }
     .progress-bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-    .dashboard-title { text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 3px; color: {title_color}; margin: 8px 0 2px 0; text-transform: uppercase; }
-    .dashboard-subtitle { text-align: center; font-size: 12px; color: {text_muted}; margin-bottom: 28px; letter-spacing: 1px; }
+    .dashboard-title { text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #94a3b8; margin: 8px 0 2px 0; text-transform: uppercase; }
+    .dashboard-subtitle { text-align: center; font-size: 12px; color: #64748b; margin-bottom: 28px; letter-spacing: 1px; }
     .demo-badge { text-align: center; margin-bottom: 8px; }
     .demo-badge span { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 16px; border-radius: 20px; }
     .csv-badge { text-align: center; margin-bottom: 8px; }
     .csv-badge span { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 16px; border-radius: 20px; }
     .custom-badge { text-align: center; margin-bottom: 8px; }
     .custom-badge span { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); color: #000; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 16px; border-radius: 20px; }
-    .due-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-radius: 10px; margin-bottom: 6px; font-size: 13px; background: {row_bg}; border: 1px solid {card_border}; }
-    .due-name { color: {text_secondary}; font-weight: 500; } .due-date { font-weight: 600; }
+    .due-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-radius: 10px; margin-bottom: 6px; font-size: 13px; background: rgba(15,23,42,0.4); border: 1px solid rgba(255,255,255,0.03); }
+    .due-name { color: #94a3b8; font-weight: 500; } .due-date { font-weight: 600; }
     .tx-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; }
-    .tx-table th { text-align: left; font-size: 11px; font-weight: 700; color: {text_muted}; text-transform: uppercase; letter-spacing: 1.5px; padding: 8px 12px; }
-    .tx-table td { padding: 10px 12px; font-size: 13px; color: {text_secondary}; background: {row_bg}; }
+    .tx-table th { text-align: left; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 8px 12px; }
+    .tx-table td { padding: 10px 12px; font-size: 13px; color: #cbd5e1; background: rgba(15,23,42,0.4); }
     .tx-table tr td:first-child { border-radius: 8px 0 0 8px; } .tx-table tr td:last-child { border-radius: 0 8px 8px 0; }
     .streamlit-expanderHeader, .streamlit-expanderHeader p, [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 13px !important; }
     [data-testid="stExpander"] summary p { margin: 0 !important; }
-    [data-testid="stSidebar"] { background: {sidebar_bg}; }
-    [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stRadio label,
-    [data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span, [data-testid="stSidebar"] .stCaption,
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] h4, [data-testid="stSidebar"] .stTextInput label,
-    [data-testid="stSidebar"] .stNumberInput label,
-    [data-testid="stSidebar"] .stSelectbox label { color: {sidebar_text} !important; }
-    [data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption,
-    [data-testid="stSidebar"] small { color: {sidebar_muted} !important; }
-    [data-testid="stSidebar"] [data-testid="stFileUploader"] label,
-    [data-testid="stSidebar"] [data-testid="stFileUploader"] span,
-    [data-testid="stSidebar"] [data-testid="stFileUploader"] small,
-    [data-testid="stSidebar"] [data-testid="stFileUploader"] section,
-    [data-testid="stSidebar"] [data-testid="stFileUploader"] div { color: {sidebar_text} !important; }
-    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] { border-color: {sidebar_muted} !important; }
-    [data-testid="stSidebar"] input, [data-testid="stSidebar"] select,
-    [data-testid="stSidebar"] [data-baseweb="select"],
-    [data-testid="stSidebar"] [data-baseweb="input"] { background: {input_bg} !important; color: {sidebar_text} !important; }
-    [data-testid="stSidebar"] [data-baseweb="select"] * { color: {sidebar_text} !important; }
-    [data-testid="stSidebar"] button[kind="secondary"] { background: {input_bg} !important; color: {sidebar_text} !important; }
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
-"""
-
-DARK_THEME = {
-    'header_bg': 'rgba(10,14,26,0.95)',
-    'app_bg': 'linear-gradient(160deg, #0a0e1a 0%, #111827 40%, #0f172a 100%)',
-    'text_primary': '#e2e8f0', 'text_secondary': '#cbd5e1', 'text_muted': '#64748b',
-    'title_color': '#94a3b8',
-    'card_bg': 'linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%)',
-    'card_shadow': '0 4px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
-    'card_border': 'rgba(255,255,255,0.06)',
-    'row_bg': 'rgba(15,23,42,0.4)', 'track_bg': 'rgba(255,255,255,0.06)',
-    'divider': 'rgba(71,85,105,0.3)',
-    'sidebar_bg': 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
-    'sidebar_text': '#e2e8f0', 'sidebar_muted': '#94a3b8', 'input_bg': 'rgba(15,23,42,0.6)',
-    'green': '#34d399', 'red': '#fb7185', 'blue': '#60a5fa',
-    'yellow': '#fbbf24', 'orange': '#fb923c', 'purple': '#a78bfa', 'teal': '#2dd4bf',
-}
-
-LIGHT_THEME = {
-    'header_bg': 'rgba(255,255,255,0.95)',
-    'app_bg': 'linear-gradient(160deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%)',
-    'text_primary': '#1e293b', 'text_secondary': '#334155', 'text_muted': '#64748b',
-    'title_color': '#1e293b',
-    'card_bg': 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.95) 100%)',
-    'card_shadow': '0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)',
-    'card_border': 'rgba(0,0,0,0.08)',
-    'row_bg': 'rgba(248,250,252,0.8)', 'track_bg': 'rgba(0,0,0,0.06)',
-    'divider': 'rgba(0,0,0,0.1)',
-    'sidebar_bg': 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)',
-    'sidebar_text': '#1e293b', 'sidebar_muted': '#64748b', 'input_bg': '#ffffff',
-    'green': '#059669', 'red': '#e11d48', 'blue': '#2563eb',
-    'yellow': '#d97706', 'orange': '#ea580c', 'purple': '#7c3aed', 'teal': '#0d9488',
-}
-
-theme = DARK_THEME if is_dark else LIGHT_THEME
-css = BASE_CSS
-for k, v in theme.items():
-    css = css.replace('{' + k + '}', v)
-st.markdown(css, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 
 # ========================
@@ -435,12 +364,6 @@ init_session_config(localS)
 # ========================
 with st.sidebar:
     st.markdown("## ⚙️ Setup")
-    
-    # === THEME ===
-    theme_label = "☀️ Switch to Light" if is_dark else "🌙 Switch to Dark"
-    if st.button(theme_label, use_container_width=True):
-        st.session_state['theme'] = 'light' if is_dark else 'dark'
-        st.rerun()
     
     # === MODE ===
     data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0)
@@ -841,9 +764,9 @@ def main():
     st.markdown('<div class="section-header">📊 Spending Breakdown & Budget Health</div>', unsafe_allow_html=True)
     col_donut, col_gauge = st.columns([3, 2])
     with col_donut:
-        st.plotly_chart(make_donut(monthly_tx, is_dark), width='stretch', config={'displayModeBar': False})
+        st.plotly_chart(make_donut(monthly_tx), width='stretch', config={'displayModeBar': False})
     with col_gauge:
-        st.plotly_chart(make_budget_gauge(budget_used_pct, is_dark), width='stretch', config={'displayModeBar': False})
+        st.plotly_chart(make_budget_gauge(budget_used_pct), width='stretch', config={'displayModeBar': False})
         if budget_used_pct < 75:
             st.markdown('<p style="text-align:center;color:#34d399;font-size:14px;font-weight:600;">✅ On track</p>', unsafe_allow_html=True)
         elif budget_used_pct < 95:
