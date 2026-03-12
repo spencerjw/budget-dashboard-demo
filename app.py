@@ -367,34 +367,40 @@ init_session_config(localS)
 with st.sidebar:
     st.markdown("## ⚙️ Setup")
     
-    # === DATA SOURCE ===
-    data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"],
-        index=0, help="Demo shows a sample dashboard. My Budget lets you set up your own.")
-    
+    # === MODE ===
+    data_mode = st.radio("Mode", ["🎲 Demo", "💰 My Budget"], index=0)
     is_my_budget = data_mode == "💰 My Budget"
     
     if not is_my_budget:
-        st.info("👆 Switch to **My Budget** to enter your own income, bills, and accounts.")
+        st.caption("Switch to **My Budget** to enter your own data.")
+    
+    # === CSV UPLOAD (top of sidebar in My Budget mode) ===
+    if is_my_budget:
+        st.markdown("---")
+        st.markdown("### 📄 Upload Transactions")
+        st.caption("Export a CSV from your bank and drop it here.")
+        uploaded_file = st.file_uploader("CSV file", type=['csv'], key="csv_upload",
+            label_visibility="collapsed")
+        if uploaded_file:
+            st.success(f"✅ File loaded")
     
     st.markdown("---")
     
     # === BASIC INFO ===
-    st.markdown("### 🏠 My Info")
     cfg = st.session_state['config']
     
-    cfg['family_name'] = st.text_input("Dashboard Name", value=cfg['family_name'],
-        disabled=not is_my_budget,
-        help="Whatever you want at the top. Your last name, 'My Budget', anything.")
-    cfg['monthly_income'] = st.number_input("Monthly Take-Home Pay ($)", value=cfg['monthly_income'],
-        step=100, min_value=0, disabled=not is_my_budget,
-        help="The amount that hits your bank account after taxes. Not your salary.")
+    if is_my_budget:
+        st.markdown("### 🏠 My Info")
+        cfg['family_name'] = st.text_input("Dashboard Name", value=cfg['family_name'])
+        cfg['monthly_income'] = st.number_input("Monthly Take-Home Pay ($)", value=cfg['monthly_income'],
+            step=100, min_value=0, help="After taxes. The amount that hits your bank account.")
     
     st.markdown("---")
     
     if is_my_budget:
         # === FIXED EXPENSES ===
         st.markdown("### 📋 Monthly Bills")
-        st.caption("Recurring charges that are roughly the same every month. Don't include groceries, gas, or eating out here.")
+        st.caption("Recurring bills. Not groceries or eating out.")
         
         expense_categories = list(cfg['fixed_expenses'].keys())
         
@@ -440,7 +446,7 @@ with st.sidebar:
         
         # === ACCOUNTS ===
         st.markdown("### 💰 Accounts & Balances")
-        st.caption("Update these whenever you check in.")
+        st.caption("Current balances.")
         
         updated_accounts = []
         
@@ -448,7 +454,7 @@ with st.sidebar:
         debt_accounts = [a for a in cfg['accounts'] if a['type'] in ('credit', 'loan')]
         
         st.markdown("#### 🏦 Cash & Savings")
-        st.caption("Money you have. Check your bank app for current balances.")
+        st.caption("Money you have.")
         
         for i, acct in enumerate(cash_accounts):
             with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}"):
@@ -476,7 +482,7 @@ with st.sidebar:
                 st.rerun()
         
         st.markdown("#### 💳 Credit Cards & Loans")
-        st.caption("Money you owe. Balance is what you owe now. Limit is your max (credit cards) or what you originally borrowed (loans).")
+        st.caption("Money you owe.")
         
         for i, acct in enumerate(debt_accounts):
             pct = f" ({acct['balance']/acct['limit']*100:.0f}%)" if acct['limit'] > 0 else ""
@@ -521,7 +527,7 @@ with st.sidebar:
         
         # === DUE DATES ===
         st.markdown("### 📅 Bill Due Dates")
-        st.caption("Day of the month each bill is due.")
+        st.caption("Day of month each bill is due.")
         
         updated_dues = {}
         for bill_name, day in list(cfg['due_dates'].items()):
@@ -573,7 +579,7 @@ with st.sidebar:
         
         # === BACKUP / TRANSFER ===
         with st.expander("📦 Backup & Transfer"):
-            st.caption("Move your settings to another device or browser.")
+            st.caption("Move settings to another device.")
             
             config_json = json.dumps(cfg, indent=2)
             st.download_button("⬇️ Download Backup", config_json, file_name="budget-settings.json",
@@ -622,21 +628,13 @@ else:
     badge_class = "custom-badge"
     badge_text = "💰 My Budget"
     
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📄 Transactions (Optional)")
-    st.sidebar.caption("Upload a CSV from your bank to see spending breakdowns and transaction history.")
-    uploaded_file = st.sidebar.file_uploader("Upload CSV", type=['csv'],
-        help="Export transactions from your bank or credit card.")
-    
-    if uploaded_file:
-        transactions = parse_csv_transactions(uploaded_file)
+    # CSV upload was placed at top of sidebar - now handle the data
+    if 'csv_upload' in st.session_state and st.session_state['csv_upload'] is not None:
+        transactions = parse_csv_transactions(st.session_state['csv_upload'])
         if transactions is not None:
-            st.sidebar.success(f"✅ Loaded {len(transactions)} transactions")
             badge_class = "csv-badge"
-            badge_text = "📄 Your Data — CSV Upload"
+            badge_text = "📄 Your Data"
     else:
-        st.sidebar.info("Upload a CSV to see your spending, or use it without one to track bills and accounts.")
-        # Create empty transactions so the rest of the dashboard works
         transactions = pd.DataFrame(columns=['Date', 'Amount', 'Merchant', 'Category Name', 'Category Group'])
 
 
