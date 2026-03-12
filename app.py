@@ -271,36 +271,42 @@ def render_progress(name, balance, limit):
     st.markdown(f'''<div class="progress-container"><div class="progress-header"><span class="progress-name">{name}</span><span class="progress-stats" style="color:{color}">${balance:,.0f} / ${limit:,.0f} &nbsp; ({pct:.0f}%)</span></div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:{min(pct,100)}%; background: linear-gradient(90deg, {color}, {color}88);"></div></div></div>''', unsafe_allow_html=True)
 
 
-def make_donut(spending_df):
+def make_donut(spending_df, is_dark=True):
+    text_color = '#e2e8f0' if is_dark else '#1e293b'
+    muted_color = '#94a3b8' if is_dark else '#64748b'
+    slice_border = 'rgba(10,14,26,0.8)' if is_dark else 'rgba(255,255,255,0.9)'
     if spending_df.empty:
         fig = go.Figure()
-        fig.add_annotation(text="No transactions yet", x=0.5, y=0.5, showarrow=False, font=dict(size=16, color='#475569'))
+        fig.add_annotation(text="No transactions yet", x=0.5, y=0.5, showarrow=False, font=dict(size=16, color=muted_color))
         fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=380, margin=dict(l=0, r=0, t=0, b=0))
         return fig
     by_group = spending_df.groupby('Category Group')['spend'].sum().reset_index().sort_values('spend', ascending=False)
     by_group = by_group[by_group['spend'] > 0]
     colors = ['#60a5fa', '#34d399', '#fbbf24', '#fb7185', '#a78bfa', '#fb923c', '#2dd4bf', '#f472b6', '#818cf8', '#94a3b8', '#22d3ee', '#84cc16']
     fig = go.Figure(data=[go.Pie(labels=by_group['Category Group'], values=by_group['spend'], hole=0.6,
-        marker=dict(colors=colors[:len(by_group)], line=dict(color='rgba(10,14,26,0.8)', width=3)),
-        textinfo='percent', textfont=dict(size=12, color='#e2e8f0', family='Inter'),
+        marker=dict(colors=colors[:len(by_group)], line=dict(color=slice_border, width=3)),
+        textinfo='percent', textfont=dict(size=12, color=text_color, family='Inter'),
         hovertemplate='<b>%{label}</b><br>$%{value:,.0f}<br>%{percent}<extra></extra>',
         pull=[0.015]*len(by_group), direction='clockwise', sort=True)])
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#e2e8f0', family='Inter'), height=380, margin=dict(l=10, r=10, t=10, b=10),
-        legend=dict(font=dict(size=11, color='#94a3b8', family='Inter'), bgcolor='rgba(0,0,0,0)', orientation='v', yanchor='middle', y=0.5, itemclick=False, itemdoubleclick=False), showlegend=True)
+        font=dict(color=text_color, family='Inter'), height=380, margin=dict(l=10, r=10, t=10, b=10),
+        legend=dict(font=dict(size=11, color=muted_color, family='Inter'), bgcolor='rgba(0,0,0,0)', orientation='v', yanchor='middle', y=0.5, itemclick=False, itemdoubleclick=False), showlegend=True)
     return fig
 
 
-def make_budget_gauge(used_pct):
+def make_budget_gauge(used_pct, is_dark=True):
+    text_color = '#e2e8f0' if is_dark else '#1e293b'
+    gauge_bg = 'rgba(255,255,255,0.04)' if is_dark else 'rgba(0,0,0,0.04)'
+    step_alpha = '0.1' if is_dark else '0.15'
     display_pct = min(used_pct, 120)
     bar_color = '#34d399' if used_pct <= 60 else ('#fbbf24' if used_pct <= 85 else '#fb7185')
     fig = go.Figure(go.Indicator(mode="gauge+number", value=display_pct,
         number={'suffix': '%', 'font': {'size': 42, 'color': bar_color, 'family': 'Inter'}},
         gauge={'axis': {'range': [0, 120], 'tickwidth': 0, 'tickcolor': 'rgba(0,0,0,0)', 'tickfont': {'color': 'rgba(0,0,0,0)'}},
-            'bar': {'color': bar_color, 'thickness': 0.3}, 'bgcolor': 'rgba(255,255,255,0.04)', 'borderwidth': 0,
-            'steps': [{'range': [0, 60], 'color': 'rgba(52,211,153,0.1)'}, {'range': [60, 85], 'color': 'rgba(251,191,36,0.1)'}, {'range': [85, 120], 'color': 'rgba(251,113,133,0.1)'}]}))
+            'bar': {'color': bar_color, 'thickness': 0.3}, 'bgcolor': gauge_bg, 'borderwidth': 0,
+            'steps': [{'range': [0, 60], 'color': f'rgba(52,211,153,{step_alpha})'}, {'range': [60, 85], 'color': f'rgba(251,191,36,{step_alpha})'}, {'range': [85, 120], 'color': f'rgba(251,113,133,{step_alpha})'}]}))
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#e2e8f0', family='Inter'), height=200, margin=dict(l=30, r=30, t=30, b=0))
+        font=dict(color=text_color, family='Inter'), height=200, margin=dict(l=30, r=30, t=30, b=0))
     return fig
 
 
@@ -363,6 +369,12 @@ BASE_CSS = """
     [data-testid="stSidebar"] .stSelectbox label { color: {sidebar_text} !important; }
     [data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption,
     [data-testid="stSidebar"] small { color: {sidebar_muted} !important; }
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] label,
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] span,
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] small,
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] section,
+    [data-testid="stSidebar"] [data-testid="stFileUploader"] div { color: {sidebar_text} !important; }
+    [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] { border-color: {sidebar_muted} !important; }
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
 """
@@ -824,9 +836,9 @@ def main():
     st.markdown('<div class="section-header">📊 Spending Breakdown & Budget Health</div>', unsafe_allow_html=True)
     col_donut, col_gauge = st.columns([3, 2])
     with col_donut:
-        st.plotly_chart(make_donut(monthly_tx), width='stretch', config={'displayModeBar': False})
+        st.plotly_chart(make_donut(monthly_tx, is_dark), width='stretch', config={'displayModeBar': False})
     with col_gauge:
-        st.plotly_chart(make_budget_gauge(budget_used_pct), width='stretch', config={'displayModeBar': False})
+        st.plotly_chart(make_budget_gauge(budget_used_pct, is_dark), width='stretch', config={'displayModeBar': False})
         if budget_used_pct < 75:
             st.markdown('<p style="text-align:center;color:#34d399;font-size:14px;font-weight:600;">✅ On track</p>', unsafe_allow_html=True)
         elif budget_used_pct < 95:
