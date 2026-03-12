@@ -346,6 +346,27 @@ st.markdown("""
     .streamlit-expanderHeader, .streamlit-expanderHeader p, [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 13px !important; }
     [data-testid="stExpander"] summary p { margin: 0 !important; }
     [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
+    /* Make sidebar toggle arrow visible when collapsed */
+    [data-testid="collapsedControl"] {
+        background: rgba(30,41,59,0.9) !important;
+        border: 1px solid rgba(96,165,250,0.3) !important;
+        border-radius: 0 12px 12px 0 !important;
+        padding: 12px 8px !important;
+        color: #60a5fa !important;
+    }
+    [data-testid="collapsedControl"] svg { fill: #60a5fa !important; width: 24px !important; height: 24px !important; }
+    [data-testid="collapsedControl"]:hover { background: rgba(30,41,59,1) !important; border-color: #60a5fa !important; }
+    
+    .settings-hint {
+        position: fixed; bottom: 20px; right: 20px; z-index: 999;
+        background: linear-gradient(135deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.95) 100%);
+        border: 1px solid rgba(96,165,250,0.3); border-radius: 14px;
+        padding: 10px 18px; font-size: 13px; color: #94a3b8;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5); cursor: default;
+        backdrop-filter: blur(10px);
+    }
+    .settings-hint span { color: #60a5fa; font-weight: 600; }
+    
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
 """, unsafe_allow_html=True)
@@ -855,6 +876,9 @@ def main():
     
     # === FOOTER ===
     st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly</div>', unsafe_allow_html=True)
+    
+    # Floating settings hint (visible when sidebar is closed)
+    st.markdown('<div class="settings-hint">⚙️ <span>Click the arrow (top left)</span> to open Settings</div>', unsafe_allow_html=True)
 
 
 if __name__ == '__main__':
