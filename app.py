@@ -347,6 +347,7 @@ st.markdown("""
     .streamlit-expanderHeader, .streamlit-expanderHeader p, [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; font-size: 13px !important; }
     [data-testid="stExpander"] summary p { margin: 0 !important; }
     [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
+    .stTextInput div[data-testid="InputInstructions"] { display: none !important; }
     [data-testid="stToast"] { left: 1rem !important; right: auto !important; background: rgba(30,41,59,0.95) !important; border: 1px solid rgba(52,211,153,0.3) !important; border-radius: 12px !important; backdrop-filter: blur(10px) !important; }
     [data-testid="stToast"] div { color: #e2e8f0 !important; }
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
