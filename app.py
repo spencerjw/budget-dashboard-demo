@@ -398,7 +398,7 @@ with st.sidebar:
         st.markdown("### 🏠 My Info")
         cfg['family_name'] = st.text_input("Dashboard Name", value=cfg['family_name'])
         cfg['monthly_income'] = st.number_input("Monthly Take-Home Pay ($)", value=cfg['monthly_income'],
-            step=100, min_value=0, help="After taxes. The amount that hits your bank account.")
+            step=100, min_value=0)
     
     st.markdown("---")
     
@@ -493,14 +493,12 @@ with st.sidebar:
         
         for i, acct in enumerate(cash_accounts):
             with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}"):
-                a_name = st.text_input("Account Name", value=acct['name'], key=f"cash_name_{i}",
-                    help="Whatever you call this account. e.g. 'Chase Checking' or 'Ally Savings'")
+                a_name = st.text_input("Account Name", value=acct['name'], key=f"cash_name_{i}")
                 a_type = st.selectbox("Account Type", ['checking', 'savings', 'investment'],
                     index=['checking', 'savings', 'investment'].index(acct['type']),
                     format_func=lambda x: {'checking': '🔵 Checking', 'savings': '🟢 Savings', 'investment': '📈 Investment / Retirement'}[x],
                     key=f"cash_type_{i}")
-                a_balance = st.number_input("Current Balance ($)", value=acct['balance'], step=100, key=f"cash_bal_{i}",
-                    help="What your account shows right now.")
+                a_balance = st.number_input("Current Balance ($)", value=acct['balance'], step=100, key=f"cash_bal_{i}")
                 
                 delete_acct = st.button("🗑️ Remove", key=f"cash_del_{i}")
                 if not delete_acct:
@@ -522,25 +520,20 @@ with st.sidebar:
         for i, acct in enumerate(debt_accounts):
             pct = f" ({acct['balance']/acct['limit']*100:.0f}%)" if acct['limit'] > 0 else ""
             with st.expander(f"**{acct['name']}** — ${acct['balance']:,.0f}{pct}"):
-                a_name = st.text_input("Account Name", value=acct['name'], key=f"debt_name_{i}",
-                    help="e.g. 'Chase Visa', 'Car Loan', 'Student Loans'")
+                a_name = st.text_input("Account Name", value=acct['name'], key=f"debt_name_{i}")
                 a_type = st.selectbox("Account Type", ['credit', 'loan'],
                     index=['credit', 'loan'].index(acct['type']),
                     format_func=lambda x: {'credit': '💳 Credit Card', 'loan': '🏦 Loan (car, student, personal, etc.)'}[x],
                     key=f"debt_type_{i}")
-                a_balance = st.number_input("Current Balance Owed ($)", value=acct['balance'], step=100, min_value=0, key=f"debt_bal_{i}",
-                    help="What you currently owe.")
+                a_balance = st.number_input("Current Balance Owed ($)", value=acct['balance'], step=100, min_value=0, key=f"debt_bal_{i}")
                 
                 if a_type == 'credit':
-                    a_limit = st.number_input("Credit Limit ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
-                        help="The maximum you're allowed to charge.")
+                    a_limit = st.number_input("Credit Limit ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}")
                 else:
-                    a_limit = st.number_input("Original Loan Amount ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}",
-                        help="How much you originally borrowed.")
+                    a_limit = st.number_input("Original Loan Amount ($)", value=acct['limit'], step=100, min_value=0, key=f"debt_lim_{i}")
                 
                 a_due_day = st.number_input("Payment Due Date (day of month)", value=acct.get('due_day', 0),
-                    min_value=0, max_value=31, step=1, key=f"debt_due_{i}",
-                    help="Day of the month payment is due. 0 = no due date.")
+                    min_value=0, max_value=31, step=1, key=f"debt_due_{i}")
                 
                 delete_acct = st.button("🗑️ Remove", key=f"debt_del_{i}")
                 if not delete_acct:
@@ -556,8 +549,7 @@ with st.sidebar:
                 nd_limit = st.number_input("Credit Limit ($)", value=0, step=100, min_value=0, key="new_debt_lim")
             else:
                 nd_limit = st.number_input("Original Loan Amount ($)", value=0, step=100, min_value=0, key="new_debt_lim")
-            nd_due = st.number_input("Payment Due Date (day of month)", value=0, min_value=0, max_value=31, step=1, key="new_debt_due",
-                help="0 = no due date.")
+            nd_due = st.number_input("Payment Due Date (day of month)", value=0, min_value=0, max_value=31, step=1, key="new_debt_due")
             if st.button("Add Account", key="add_debt") and nd_name.strip():
                 updated_accounts.append({'name': nd_name.strip(), 'type': nd_type, 'balance': nd_balance, 'limit': nd_limit, 'due_day': nd_due})
                 st.rerun()
@@ -616,11 +608,10 @@ with st.sidebar:
         
         config_json = json.dumps(cfg, indent=2)
         st.download_button("⬇️ Download My Settings", config_json, file_name="budget-settings.json",
-            mime="application/json", use_container_width=True,
-            help="Save a backup file you can load on another device or your own dashboard.")
+            mime="application/json", use_container_width=True)
         
         uploaded_config = st.file_uploader("⬆️ Load Settings File", type=['json'],
-            help="Upload a previously saved budget-settings.json file.", label_visibility="collapsed")
+            label_visibility="collapsed")
         if uploaded_config:
             try:
                 loaded = json.loads(uploaded_config.read().decode('utf-8'))
