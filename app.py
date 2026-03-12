@@ -392,7 +392,7 @@ with st.sidebar:
     if not is_my_budget:
         st.info("👀 Viewing sample data for a fictional family. Switch to **💰 My Budget** to build your own.")
     else:
-        st.caption("Your settings save automatically in this browser.")
+        st.markdown("🔒 **Your data never leaves your browser.** No accounts, no servers, no tracking. Everything you enter stays on this device only.")
         
         # === CSV UPLOAD ===
         st.markdown("### 📄 Upload Transactions")
