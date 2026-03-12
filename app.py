@@ -402,8 +402,13 @@ with st.sidebar:
         
         expense_categories = list(cfg['fixed_expenses'].keys())
         
+        # Track which expander to keep open
+        if 'open_expense_cat' not in st.session_state:
+            st.session_state['open_expense_cat'] = None
+        
         for cat_name in expense_categories:
-            with st.expander(f"**{cat_name}** (${sum(cfg['fixed_expenses'][cat_name].values()):,.0f}/mo)"):
+            is_open = st.session_state.get('open_expense_cat') == cat_name
+            with st.expander(f"**{cat_name}** (${sum(cfg['fixed_expenses'][cat_name].values()):,.0f}/mo)", expanded=is_open):
                 items = cfg['fixed_expenses'][cat_name]
                 updated_items = {}
                 
@@ -419,16 +424,37 @@ with st.sidebar:
                     if not delete and new_name.strip():
                         updated_items[new_name.strip()] = new_amount
                 
-                st.markdown("---")
-                st.caption("Add a bill:")
-                nc1, nc2 = st.columns([3, 2])
-                with nc1:
-                    new_bill_name = st.text_input("Name", key=f"new_name_{cat_name}", placeholder="e.g. Netflix", label_visibility="collapsed")
-                with nc2:
-                    new_bill_amount = st.number_input("$", value=0, step=5, min_value=0, key=f"new_amt_{cat_name}", label_visibility="collapsed")
+                # Add new bill
+                show_add_key = f"show_add_{cat_name}"
+                if show_add_key not in st.session_state:
+                    st.session_state[show_add_key] = False
                 
-                if new_bill_name.strip() and new_bill_amount > 0:
-                    updated_items[new_bill_name.strip()] = new_bill_amount
+                if st.session_state[show_add_key]:
+                    st.markdown("---")
+                    nc1, nc2 = st.columns([3, 2])
+                    with nc1:
+                        new_bill_name = st.text_input("Bill name", key=f"new_name_{cat_name}", placeholder="e.g. Netflix", label_visibility="collapsed")
+                    with nc2:
+                        new_bill_amount = st.number_input("Amount", value=0, step=5, min_value=0, key=f"new_amt_{cat_name}", label_visibility="collapsed")
+                    
+                    sc1, sc2 = st.columns(2)
+                    with sc1:
+                        if st.button("✅ Save", key=f"save_bill_{cat_name}", use_container_width=True):
+                            if new_bill_name.strip() and new_bill_amount > 0:
+                                updated_items[new_bill_name.strip()] = new_bill_amount
+                                st.session_state[show_add_key] = False
+                                st.session_state['open_expense_cat'] = cat_name
+                                st.rerun()
+                    with sc2:
+                        if st.button("Cancel", key=f"cancel_bill_{cat_name}", use_container_width=True):
+                            st.session_state[show_add_key] = False
+                            st.session_state['open_expense_cat'] = cat_name
+                            st.rerun()
+                else:
+                    if st.button("➕ Add a bill", key=f"add_{cat_name}", use_container_width=True):
+                        st.session_state[show_add_key] = True
+                        st.session_state['open_expense_cat'] = cat_name
+                        st.rerun()
                 
                 cfg['fixed_expenses'][cat_name] = updated_items
         
