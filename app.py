@@ -454,6 +454,8 @@ with st.sidebar:
         st.info("The investments view is not customizable in this demo. Switch back to **💵 Daily Finances** to configure your budget.")
         st.caption("Investment accounts, holdings, and allocation shown here use sample data to demonstrate the feature.")
 
+is_my_budget = st.session_state.get('mode', 'demo') == 'budget'
+
 if st.session_state.get("view_mode") != "investments":
  with st.sidebar:
     # === STATUS MESSAGES ===
