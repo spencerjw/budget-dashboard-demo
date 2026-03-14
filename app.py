@@ -327,8 +327,14 @@ def render_progress(name, balance, limit):
 def make_donut(spending_df):
     if spending_df.empty:
         fig = go.Figure()
-        fig.add_annotation(text="No transactions yet", x=0.5, y=0.5, showarrow=False, font=dict(size=16, color='#64748b'))
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=380, margin=dict(l=0, r=0, t=0, b=0))
+        fig.add_annotation(
+            text="<b>No transactions yet</b><br><br>Upload a bank CSV or switch to<br>Demo Test Data to see spending",
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=18, color='#94a3b8'),
+            align='center'
+        )
+        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=380,
+            margin=dict(l=0, r=0, t=0, b=0), xaxis=dict(visible=False), yaxis=dict(visible=False))
         return fig
     by_group = spending_df.groupby('Category Group')['spend'].sum().reset_index().sort_values('spend', ascending=False)
     by_group = by_group[by_group['spend'] > 0]
