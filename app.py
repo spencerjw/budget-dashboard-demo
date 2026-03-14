@@ -722,18 +722,16 @@ if st.session_state.get("view_mode") != "investments":
                 updated_dues[bill_name] = (new_day, new_amt)
         
         st.caption("Add a new bill due date:")
-        nc1, nc2, nc3, nc4 = st.columns([3, 1.5, 1, 0.5])
+        nc1, nc2, nc3 = st.columns([3, 1.5, 1])
         with nc1:
             new_due_name = st.text_input("Bill name", key="new_due_name", placeholder="e.g. Rent", label_visibility="collapsed")
         with nc2:
             new_due_amt = st.number_input("$", value=0, step=5, min_value=0, key="new_due_amt", label_visibility="collapsed")
         with nc3:
             new_due_day = st.number_input("Day", value=1, min_value=1, max_value=31, key="new_due_day", label_visibility="collapsed")
-        with nc4:
-            add_due = st.button("➕", key="add_due_btn")
-        
-        if add_due and new_due_name.strip():
-            updated_dues[new_due_name.strip()] = (new_due_day, new_due_amt)
+        if st.button("➕ Add Due Date", key="add_due_btn", use_container_width=True):
+            if new_due_name.strip():
+                updated_dues[new_due_name.strip()] = (new_due_day, new_due_amt)
         
         cfg['due_dates'] = updated_dues
         
