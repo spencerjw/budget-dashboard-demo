@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 .streamlit/secrets.toml
+config.yaml
+*.json
+app_personal_reference.py
+MERGE_SPEC.md

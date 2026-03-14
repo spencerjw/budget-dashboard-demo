@@ -1,162 +1,111 @@
-# 💰 Budget Dashboard
+# 💰 Family Budget Dashboard
 
-A dark-themed personal budget dashboard built with Streamlit and Plotly. Works out of the box with demo data, or enter your own finances -- everything stays in your browser.
+A dark-themed personal finance dashboard built with Streamlit and Plotly. Works as a live demo with sample data, or connect your real bank accounts for a fully automated personal dashboard.
 
-**[🚀 Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** — Try it now with sample data *(right-click → "Open in new tab" to keep this page open)*
+**[🚀 Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** -- Try it now with sample data
 
-![Dashboard Preview](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?style=for-the-badge&logo=streamlit)
-![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python)
+## Two Modes, One Codebase
+
+### Demo Mode (Default)
+Open the app and explore immediately. No setup required.
+- Sidebar with **Demo Test Data** (sample family) or **Try with My Data** (manual entry)
+- Upload bank transaction CSVs for spending analysis
+- Customize bills, due dates, accounts, and income in the sidebar
+- Toggle between **Daily Finances** and **Long-Term Investments** views
+- Everything stays in your browser. No accounts, no servers, no tracking.
+
+### Production Mode (Your Real Data)
+Fork the repo, add your config, and get a fully automated dashboard synced to your real bank accounts.
+- Connects to **Finta.io** for automatic bank/brokerage syncing via Plaid
+- No sidebar. No manual entry. Data refreshes automatically.
+- Fixed expenses, due dates, and income loaded from a simple `config.yaml`
+- Investment holdings with real-time NAV lookups for 401(k) funds
+- Same dark theme and features as the demo, powered by real data
 
 ## Features
 
-- **📊 KPI Cards** — Spendable balance, credit usage, savings, income, investments
-- **🍩 Spending Breakdown** — Interactive donut chart by category
-- **🎯 Budget Health Gauge** — Visual budget health (green/yellow/red)
-- **🔍 Category Drill-Down** — Click any category to see sub-categories and transactions
-- **📋 Fixed Expense Panels** — Expandable breakdowns of recurring bills
-- **💳 Debt Tracking** — Progress bars for credit cards and loans with due dates
-- **📅 Due Date Calendar** — Upcoming bills with paid/due soon/upcoming status
-- **🧾 Transaction History** — Paginated transaction table
-- **📆 Month Selector** — View current month, past months, or year-to-date
-- **📄 Multi-CSV Upload** — Upload transactions from multiple bank accounts at once
-- **💾 Auto-Save** — Settings save automatically in your browser via localStorage
-- **🔒 Privacy First** — No accounts, no servers, no tracking. Data never leaves your browser.
-- **🌙 Dark Theme** — Polished dark UI with glassmorphism effects
+- **KPI Cards** -- Spendable balance, credit usage, savings, income, investments
+- **Spending Donut** -- Interactive breakdown by category with drill-down
+- **Budget Health Gauge** -- Visual green/yellow/red budget status
+- **Category Drill-Down** -- Click any category for sub-categories and transactions
+- **Fixed Expense Panels** -- Expandable breakdowns of recurring bills
+- **Credit & Debt Tracking** -- Progress bars for cards and loans with due dates
+- **Upcoming Due Dates** -- Next 14 days shown by default, expandable for all bills (with dollar amounts)
+- **Transaction History** -- Paginated table with merchant, category, and amount
+- **Month Selector** -- Current month, past months, or year-to-date
+- **Investments View** -- Portfolio total, account cards, holdings drill-down, allocation donut, balance history
+- **Mobile Responsive** -- Works on phone screens
 
-## 🆕 New to Budgeting?
+## Quick Start (Production)
 
-Check out the **[Getting Started Guide](GETTING-STARTED.md)** — a step-by-step walkthrough from "I've never tracked money" to a working dashboard. No finance background needed. No coding.
+Setup takes about 15 minutes.
 
----
+### 1. Fork this repo
+Click **Fork** on GitHub. Clone your fork locally.
 
-## How to Use It
+### 2. Set up Finta.io
+- Create an account at [finta.io](https://finta.io) ($5.83/mo)
+- Connect your bank accounts (checking, savings, credit cards, loans, brokerages)
+- Finta syncs to a Google Sheet automatically
 
-### Just Want to See the Demo?
-Click the **[Live Demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)** link. It loads with sample data for a fictional family. Nothing to install.
+Finta uses **Plaid** under the hood -- the same secure bank connection layer trusted by Chase, Vanguard, and thousands of financial institutions. Plaid is SOC 2 Type II certified and connects to 12,000+ institutions.
 
-### Want to Track Your Own Budget?
+### 3. Create your config
+```bash
+cp config.example.yaml config.yaml
+```
+Edit `config.yaml` with your:
+- Finta Google Sheet ID (from the sheet URL)
+- Monthly income
+- Fixed expenses (organized by category)
+- Bill due dates with amounts
+- (Optional) 401(k) fund ticker mappings for NAV lookups
 
-**Everything is done through the sidebar — no code to edit.**
+`config.yaml` is gitignored -- your financial details never touch GitHub.
 
-1. Open the [dashboard](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)
-2. Click the **>** arrow (top left) to open the sidebar
-3. Click **💰 My Budget** to switch from demo mode
-4. Fill in your income, bills, accounts, and due dates using the sidebar forms
-5. Your settings **auto-save in your browser** — they'll be there next time you visit
-6. Optionally upload CSVs from your bank(s) to see spending breakdowns
+### 4. Set up Google Service Account
+- Create a service account in Google Cloud Console
+- Download the JSON key
+- Share your Finta Google Sheet with the service account email (read-only)
+- Reference the key file in `config.yaml` (local) or add it to Streamlit Secrets (cloud)
 
-That's it. No account to create, no software to install, no code to write.
+### 5. Deploy to Streamlit Cloud
+- Connect your forked repo at [share.streamlit.io](https://share.streamlit.io)
+- Add your config as **Streamlit Secrets** (Settings > Secrets):
+  - Paste your `config.yaml` contents
+  - Add `[gcp_service_account]` section with your service account JSON
+- Deploy. Your dashboard auto-syncs with Finta every 15 minutes.
 
----
+## Configuration Reference
 
-## Uploading Your Transactions (CSV)
+See [`config.example.yaml`](config.example.yaml) for a complete template with comments.
 
-This powers the spending donut chart, category drill-down, and transaction history. It's optional — the dashboard works without it for tracking bills, accounts, and due dates.
+| Setting | Required | Description |
+|---------|----------|-------------|
+| `finta_sheet_id` | Yes | Your Finta Google Sheet ID |
+| `service_account_file` | Local only | Path to Google service account JSON |
+| `family_name` | No | Dashboard title (default: "Family Budget") |
+| `monthly_income` | Yes | Combined monthly take-home pay |
+| `fixed_expenses` | Yes | Recurring bills organized by category |
+| `due_dates` | No | Bill names with [day, amount] pairs |
+| `ploc_limit` | No | Line of credit limit (enables PLOC tracking) |
+| `fund_ticker_map` | No | 401(k) fund-to-ticker mappings for NAV lookups |
 
-**You can upload multiple files at once** — one from each bank account or credit card.
+## Security
 
-### How to Get Your CSV
-
-1. **Log into your bank's website** (or credit card website)
-2. **Go to your transaction history** (usually called "Activity" or "Transactions")
-3. **Look for a "Download" or "Export" button** — choose **CSV** format
-4. **In the dashboard sidebar**, drop your CSV(s) into the upload area
-
-**Where to find the download button at common banks:**
-
-| Bank / Card | Where to Look |
-|-------------|--------------|
-| **Chase** | Log in → Activity → click the ⬇️ download icon at the top → choose CSV |
-| **Bank of America** | Log in → Activity tab → "Download" link near the top right → CSV |
-| **Wells Fargo** | Log in → Account Activity → "Download" button → Comma Delimited |
-| **Capital One** | Log in → "View Transactions" → "Download Transactions" link → CSV |
-| **Amex** | Log in → "Statements & Activity" → "Download your Transactions" → CSV |
-| **USAA** | Log in → Transactions tab → "Export" button → CSV |
-| **Discover** | Log in → "Recent Activity" → "Download" → CSV |
-| **Citi** | Log in → "View Account Activity" → "Download" link → CSV |
-| **Credit unions** | Look for "Export," "Download," or "Save Transactions" in your transaction history |
-
-### What Format Does the CSV Need?
-
-The dashboard auto-detects most bank formats. It looks for columns like:
-
-- A **date** column (called "Date," "Transaction Date," "Posted Date," etc.)
-- An **amount** column (called "Amount," "Debit," "Transaction Amount," etc.)
-- A **description** column (called "Description," "Merchant," "Payee," "Name," etc.)
-- A **category** column (optional — called "Category," "Type," etc.)
-
-If your bank's CSV has these columns (most do), it'll work. You don't need to rename anything.
-
----
-
-## Saving & Transferring Your Settings
-
-**Settings save automatically** in your browser's localStorage. Close the tab, come back tomorrow — everything's still there.
-
-**Moving to another device or your own private dashboard:**
-1. In the sidebar, scroll to **🚀 Take It With You**
-2. Click **⬇️ Download My Settings** to save a JSON file
-3. On the new device, upload that file with **⬆️ Load Settings File**
-
-**Clearing your browser data** (history, cookies, etc.) will erase your settings. Download a backup first if you do this regularly.
-
----
-
-## Demo vs. Real Setup
-
-The sidebar controls, manual inputs, and CSV uploads exist because **this is a demo** — there are no real bank accounts connected.
-
-In a real installation, you connect your accounts through **[Finta](https://www.finta.io/)** ($5.83/month), which syncs your bank and brokerage transactions automatically into a Google Sheet. Finta uses **[Plaid](https://plaid.com/)** under the hood — the same secure bank-connection layer trusted by Chase, Vanguard, Venmo, and major financial institutions worldwide. Plaid is SOC 2 Type II certified and connects to 12,000+ institutions.
-
-**After initial setup, the dashboard just works.** Transactions flow in daily, balances stay current, and there's nothing to upload or enter manually. The sidebar simplifies down to just viewing controls.
-
-See the full Finta setup instructions in the [Getting Started Guide](GETTING-STARTED.md#auto-sync-advanced--optional).
-
----
-
-## Deploy Your Own Private Copy
-
-If you want your own dashboard URL that nobody else can see:
-
-1. Create free accounts at **[github.com](https://github.com)** and **[streamlit.io](https://streamlit.io)**
-2. Go to the [dashboard repo](https://github.com/spencerjw/budget-dashboard-demo) and click **"Fork"** (top right)
-3. Go to **[share.streamlit.io](https://share.streamlit.io)** and click **"New app"**
-4. Select your fork, branch `main`, file `app.py`
-5. Click **Deploy**
-
-Set it to **invite-only** in Settings → Sharing if you're entering real financial data.
-
----
-
-## FAQ
-
-**Is my data stored on a server?**
-No. Settings save in your browser's localStorage. CSV uploads are processed in-memory. Nothing is sent to any server.
-
-**Can I use this on my phone?**
-Yes. The layout adjusts automatically.
-
-**Can I track multiple bank accounts?**
-Yes. Upload CSVs from each account — the dashboard merges them automatically.
-
-**Does it work without uploading any CSV?**
-Yes. Enter your income, bills, accounts, and due dates in the sidebar. The spending breakdown and transaction history need transaction data, but everything else works.
-
----
-
-## Templates
-
-The `templates/` folder includes starter files:
-- **`fixed-expenses-template.csv`** — Common recurring bills with examples
-- **`transactions-template.csv`** — Sample transaction format
-- **`accounts-template.csv`** — Account balances template
+- **Demo mode**: Everything stays in your browser via `localStorage`. No server, no cookies, no tracking.
+- **Production mode**: Your financial data lives in your Finta Google Sheet (your Google account). The dashboard reads it read-only via a service account. No data is stored in the app code.
+- **Config**: `config.yaml` and service account keys are gitignored. On Streamlit Cloud, use encrypted Secrets.
+- **Plaid**: SOC 2 Type II certified, bank-level encryption, used by major financial apps worldwide.
 
 ## Tech Stack
 
-- **[Streamlit](https://streamlit.io/)** — App framework
-- **[Plotly](https://plotly.com/)** — Interactive charts
-- **[Pandas](https://pandas.pydata.org/)** — Data handling
+- [Streamlit](https://streamlit.io) -- App framework
+- [Plotly](https://plotly.com) -- Charts and visualizations
+- [Finta.io](https://finta.io) -- Bank data sync (production mode)
+- [Plaid](https://plaid.com) -- Secure bank connections (via Finta)
+- [yfinance](https://github.com/ranaroussi/yfinance) -- Fund NAV lookups (production mode)
 
 ## License
 
-MIT — Use it however you want.
+MIT

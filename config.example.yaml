@@ -1,0 +1,74 @@
+# Family Budget Dashboard - Configuration
+# Copy this file to config.yaml and fill in your values.
+# On Streamlit Cloud, use Streamlit Secrets instead (see README).
+
+# ========================
+# Finta Integration (Required for production mode)
+# ========================
+finta_sheet_id: "your-finta-google-sheet-id"
+
+# Google service account file (local development only)
+# On Streamlit Cloud, add service account JSON to secrets as [gcp_service_account]
+service_account_file: "service-account.json"
+
+# ========================
+# Family Info
+# ========================
+family_name: "Family Budget"
+monthly_income: 5000  # Combined monthly take-home pay
+
+# ========================
+# PLOC / Line of Credit (optional)
+# ========================
+# ploc_limit: 12000
+# ploc_apr: 18.0
+
+# ========================
+# Fixed Monthly Expenses
+# ========================
+# Organize by category. These show in the Fixed Expenses panel.
+fixed_expenses:
+  Household:
+    Electric: 200
+    Internet: 80
+    Phone: 100
+    Pest Control: 60
+    Pet Expenses: 50
+    Streaming Services: 30
+  Auto & Insurance:
+    Car Payment: 450
+    Auto Insurance: 185
+    Life Insurance: 15
+  Debt Payments:
+    Mortgage: 2000
+    Student Loans: 400
+  Subscriptions:
+    Gym: 35
+    Cloud Storage: 10
+
+# ========================
+# Bill Due Dates
+# ========================
+# Format: Name: [day_of_month, dollar_amount]
+# Set amount to 0 for variable bills (credit cards)
+due_dates:
+  Mortgage: [1, 2000]
+  Car Payment: [15, 450]
+  Student Loans: [10, 400]
+  Electric: [25, 200]
+  Internet: [5, 80]
+  Phone: [2, 100]
+  Auto Insurance: [1, 185]
+  Credit Card: [17, 0]
+
+# ========================
+# 401(k) Fund Ticker Mappings (optional)
+# ========================
+# If your 401(k) is connected via Plaid/Finta, Plaid often doesn't
+# provide per-fund prices. Map fund names to public ticker symbols
+# for NAV lookups. Values are scaled proportionally to match your
+# actual account balance.
+# fund_ticker_map:
+#   "T. Rowe Price Stable Value Fund": "TRSSX"
+#   "American Funds Growth Fund of Amer": "AGTHX"
+#   "Vanguard Target Retirement 2040": "VTIVX"

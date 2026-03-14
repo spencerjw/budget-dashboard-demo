@@ -7,6 +7,36 @@ import random
 import json
 import time
 import io
+import yaml
+import os
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+import math
+
+# ========================
+# CONFIG LOADING
+# ========================
+
+def load_config():
+    """Load config from Streamlit secrets or config.yaml."""
+    # Check Streamlit secrets first
+    try:
+        if hasattr(st, 'secrets') and 'finta_sheet_id' in st.secrets:
+            cfg = dict(st.secrets)
+            # Convert secrets to proper types
+            return cfg
+    except Exception:
+        pass
+    # Check config.yaml
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
+    if os.path.exists(config_path):
+        with open(config_path) as f:
+            return yaml.safe_load(f)
+    return None
+
+_APP_CONFIG = load_config()
+IS_PRODUCTION = _APP_CONFIG is not None
+
 
 # ========================
 # DEMO DATA GENERATOR
@@ -364,9 +394,186 @@ def make_budget_gauge(used_pct):
 
 
 # ========================
+# FINTA / PRODUCTION DATA
+# ========================
+
+def get_credentials():
+    """Get Google credentials from Streamlit secrets or local file."""
+    try:
+        # Streamlit Cloud: read from secrets
+        if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
+            info = dict(st.secrets["gcp_service_account"])
+            return service_account.Credentials.from_service_account_info(
+                info,
+                scopes=['https://www.googleapis.com/auth/spreadsheets.readonly']
+            )
+    except Exception:
+        pass
+
+    # Local: read from file
+    sa_path = _APP_CONFIG.get('service_account_file', 'service-account.json') if _APP_CONFIG else 'service-account.json'
+    return service_account.Credentials.from_service_account_file(
+        sa_path,
+        scopes=['https://www.googleapis.com/auth/spreadsheets.readonly']
+    )
+
+
+@st.cache_data(ttl=900)  # 15 minutes
+def load_finta_data():
+    """Load all data from Finta Google Sheet."""
+    try:
+        creds = get_credentials()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet_id = _APP_CONFIG['finta_sheet_id']
+
+        sheets_to_load = ['Accounts', 'Transactions', 'Balance History', 'Categories']
+        data = {}
+
+        for sheet_name in sheets_to_load:
+            # Retry up to 3 times on transient errors
+            for attempt in range(3):
+                try:
+                    result = service.spreadsheets().values().get(
+                        spreadsheetId=sheet_id,
+                        range=f"'{sheet_name}'!A1:Z5000"
+                    ).execute()
+                    break
+                except Exception as api_err:
+                    if attempt < 2 and ('503' in str(api_err) or '429' in str(api_err) or 'unavailable' in str(api_err).lower()):
+                        time.sleep(2 ** attempt)  # 1s, 2s backoff
+                        continue
+                    raise
+
+            values = result.get('values', [])
+            if len(values) > 1:
+                header = values[0]
+                rows = [r for r in values[1:] if r and r[0] != '---']
+                rows = [r + [''] * (len(header) - len(r)) for r in rows]
+                data[sheet_name] = pd.DataFrame(rows, columns=header)
+            else:
+                data[sheet_name] = pd.DataFrame()
+
+        # Load Holdings and Securities tabs (investment positions)
+        for extra_tab in ['Holdings', 'Securities']:
+            try:
+                result = service.spreadsheets().values().get(
+                    spreadsheetId=sheet_id,
+                    range=f"'{extra_tab}'!A1:P500"
+                ).execute()
+                values = result.get('values', [])
+                if len(values) > 1:
+                    header = values[0]
+                    rows = [r for r in values[1:] if r and r[0] != '---' and r[0] != '']
+                    rows = [r + [''] * (len(header) - len(r)) for r in rows]
+                    data[extra_tab] = pd.DataFrame(rows, columns=header)
+                else:
+                    data[extra_tab] = pd.DataFrame()
+            except Exception:
+                data[extra_tab] = pd.DataFrame()
+
+        # Load Manual Accounts tab
+        try:
+            result = service.spreadsheets().values().get(
+                spreadsheetId=sheet_id,
+                range="'Manual Accounts'!A1:D100"
+            ).execute()
+            values = result.get('values', [])
+            if len(values) > 1:
+                header = values[0]
+                rows = [r + [''] * (len(header) - len(r)) for r in values[1:] if r]
+                data['Manual Accounts'] = pd.DataFrame(rows, columns=header)
+            else:
+                data['Manual Accounts'] = pd.DataFrame()
+        except Exception:
+            data['Manual Accounts'] = pd.DataFrame()
+
+        return data
+    except Exception as e:
+        st.error("⚠️ Google Sheets is temporarily unavailable. Refresh in a minute.")
+        return None
+
+
+# 401(k) fund ticker mappings for NAV-based proportional allocation
+FUND_TICKER_MAP = _APP_CONFIG.get('fund_ticker_map', {}) if _APP_CONFIG else {}
+
+
+@st.cache_data(ttl=3600)
+def get_fund_navs():
+    """Look up current NAVs for 401(k) fund ticker mappings. Cached 1 hour."""
+    try:
+        import yfinance as yf
+        navs = {}
+        for fund_name, ticker in FUND_TICKER_MAP.items():
+            try:
+                info = yf.Ticker(ticker).info
+                price = info.get('previousClose') or info.get('navPrice') or info.get('regularMarketPrice')
+                if price and price > 0:
+                    navs[fund_name] = price
+            except Exception:
+                pass
+        return navs
+    except ImportError:
+        return {}
+
+
+def parse_finta_amount(val):
+    """Parse Finta amount string (e.g. '$1,847.00') to float."""
+    if not val:
+        return 0.0
+    try:
+        return float(str(val).replace(',', '').replace('$', '').strip())
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def get_manual_balances(manual_df):
+    """Extract balances from the Manual Accounts tab."""
+    manual = {}
+    if manual_df is None or manual_df.empty:
+        return manual
+    for _, row in manual_df.iterrows():
+        name = str(row.get('Account', '')).strip()
+        bal = parse_finta_amount(row.get('Balance', 0))
+        updated = str(row.get('Last Updated', ''))
+        acct_type = str(row.get('Type', '')).strip().lower()
+        manual[name] = {'balance': bal, 'type': acct_type, 'last_updated': updated}
+    return manual
+
+
+def get_account_balances(accounts_df):
+    """Extract current balances from Accounts sheet."""
+    balances = {}
+    if accounts_df.empty:
+        return balances
+
+    for _, row in accounts_df.iterrows():
+        name = str(row.get('Name', ''))
+        bal = parse_finta_amount(row.get('Current Balance', 0))
+        limit = parse_finta_amount(row.get('Account Limit', 0))
+        acct_type = str(row.get('Account Type', ''))
+        subtype = str(row.get('Account Subtype', ''))
+
+        if 'Bonvoy' in name:
+            balances['bonvoy'] = {'balance': bal, 'limit': limit, 'name': 'Bonvoy Visa'}
+        elif 'Savings' in name and 'Wells' in name:
+            balances['savings'] = {'balance': bal, 'name': 'Wells Fargo Savings'}
+        elif 'Tesla' in name and 'Loan' in name:
+            balances['tesla_loan'] = {'balance': bal, 'name': 'Tesla Loan'}
+        elif acct_type == 'investment':
+            if 'investments' not in balances:
+                balances['investments'] = {'balance': 0, 'accounts': []}
+            balances['investments']['balance'] += bal
+            balances['investments']['accounts'].append({'name': name, 'balance': bal})
+
+    return balances
+
+
+# ========================
 # PAGE CONFIG + CSS
 # ========================
-st.set_page_config(page_title="Budget Dashboard", page_icon="💰", layout="wide", initial_sidebar_state="expanded")
+_page_title = _APP_CONFIG.get('family_name', 'Budget Dashboard') if IS_PRODUCTION else 'Budget Dashboard'
+st.set_page_config(page_title=_page_title, page_icon="💰", layout="wide",
+                   initial_sidebar_state='collapsed' if IS_PRODUCTION else 'expanded')
 
 st.markdown("""
 <style>
@@ -452,17 +659,21 @@ init_session_config(localS)
 
 
 # ========================
-# SIDEBAR
+# SIDEBAR (demo mode only)
 # ========================
-with st.sidebar:
+if not IS_PRODUCTION:
+ with st.sidebar:
     if st.session_state.get("view_mode") == "investments":
         st.markdown("### 📈 Investments View")
         st.info("The investments view is not customizable in this demo. Switch back to **💵 Daily Finances** to configure your budget.")
         st.caption("Investment accounts, holdings, and allocation shown here use sample data to demonstrate the feature.")
 
-is_my_budget = st.session_state.get('mode', 'demo') == 'budget'
+if not IS_PRODUCTION:
+    is_my_budget = st.session_state.get('mode', 'demo') == 'budget'
+else:
+    is_my_budget = False
 
-if st.session_state.get("view_mode") != "investments":
+if not IS_PRODUCTION and st.session_state.get("view_mode") != "investments":
  with st.sidebar:
     # === STATUS MESSAGES ===
     if st.session_state.get('reset_success'):
@@ -803,13 +1014,25 @@ if st.session_state.get("view_mode") != "investments":
 
 
 # ========================
-# LOAD DATA
+# LOAD DATA (demo mode only)
 # ========================
-cfg = st.session_state['config']
-transactions = None
-is_demo = False
+if IS_PRODUCTION:
+    cfg = {}
+    transactions = None
+    is_demo = False
+    FIXED_EXPENSES = {}
+    ACCOUNTS = []
+    DUE_DATES = {}
+    FAMILY_NAME = ''
+    MONTHLY_INCOME = 0
+    badge_class = ''
+    badge_text = ''
+else:
+    cfg = st.session_state['config']
+    transactions = None
+    is_demo = False
 
-if not is_my_budget:
+if not IS_PRODUCTION and not is_my_budget:
     transactions = generate_months_of_data(6)
     is_demo = True
     FIXED_EXPENSES = DEMO_FIXED_EXPENSES
@@ -819,7 +1042,7 @@ if not is_my_budget:
     MONTHLY_INCOME = 9200
     badge_class = "demo-badge"
     badge_text = "⚡ Demo Mode — Sample Data"
-else:
+elif not IS_PRODUCTION:
     is_demo = False
     FIXED_EXPENSES = cfg['fixed_expenses']
     ACCOUNTS = cfg['accounts']
@@ -1057,9 +1280,605 @@ def render_investments_view():
 
 
 # ========================
+# PRODUCTION INVESTMENTS VIEW
+# ========================
+def render_production_investments_view(data, manual):
+    """Render the Long-Term Investments view with real Finta data."""
+    DUE_DATES = _APP_CONFIG.get('due_dates', {})
+    # Convert [day, amount] lists to tuples
+    DUE_DATES = {k: tuple(v) if isinstance(v, list) else v for k, v in DUE_DATES.items()}
+    FIXED_EXPENSES = _APP_CONFIG.get('fixed_expenses', {})
+
+    accounts = data.get('Accounts', pd.DataFrame())
+    holdings = data.get('Holdings', pd.DataFrame())
+    balance_history = data.get('Balance History', pd.DataFrame())
+
+    # Gather investment accounts from Finta
+    investment_accounts = []
+    if not accounts.empty:
+        for _, row in accounts.iterrows():
+            if str(row.get('Account Type', '')) == 'investment':
+                name = str(row.get('Name', ''))
+                bal = parse_finta_amount(row.get('Current Balance', 0))
+                subtype = str(row.get('Account Subtype', ''))
+                investment_accounts.append({
+                    'name': name, 'balance': bal, 'subtype': subtype,
+                    'source': 'Finta/Plaid'
+                })
+
+    # Add manual investment accounts (e.g., John Hancock 401k)
+    for acct_name, acct_data in manual.items():
+        if acct_data.get('type') == 'investment':
+            investment_accounts.append({
+                'name': acct_name, 'balance': acct_data['balance'],
+                'subtype': 'manual', 'source': f"Manual (updated {acct_data.get('last_updated', 'N/A')})"
+            })
+
+    total_investments = sum(a['balance'] for a in investment_accounts)
+
+    # Build holdings lookup by account name
+    holdings_by_account = {}
+    if not holdings.empty:
+        for _, row in holdings.iterrows():
+            acct_name = str(row.get('Account', ''))
+            symbol = str(row.get('Symbol', '')).strip()
+            sec_name = str(row.get('Security Name', '')).strip()
+            qty = parse_finta_amount(row.get('Quantity', 0))
+            value = parse_finta_amount(row.get('Total Value', 0))
+            gain_loss = str(row.get('Gain / Loss', '')).strip()
+            sec_type = str(row.get('Security Type', '')).strip()
+            close_price = parse_finta_amount(row.get('Security Close Price', 0))
+
+            if acct_name not in holdings_by_account:
+                holdings_by_account[acct_name] = []
+
+            display_name = symbol if symbol and symbol != 'CUR:USD' else sec_name
+            if not display_name:
+                display_name = sec_name or symbol
+
+            holdings_by_account[acct_name].append({
+                'symbol': symbol, 'name': sec_name, 'display': display_name,
+                'quantity': qty, 'value': value, 'gain_loss': gain_loss,
+                'type': sec_type, 'price': close_price
+            })
+
+    # Total Portfolio KPI
+    st.markdown(f"""
+    <div style="background:linear-gradient(145deg, rgba(16,185,129,0.15) 0%, rgba(15,23,42,0.9) 100%);
+                border:1px solid rgba(16,185,129,0.3);border-radius:20px;padding:32px;text-align:center;margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:#10b981;text-transform:uppercase;letter-spacing:2px;">Total Portfolio Value</div>
+        <div style="font-size:48px;font-weight:800;color:#e2e8f0;margin:8px 0;">${total_investments:,.2f}</div>
+        <div style="font-size:13px;color:#64748b;">{len(investment_accounts)} accounts across {len(set(a['source'] for a in investment_accounts))} sources</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Account cards
+    st.markdown('<div class="section-header">📈 Investment Accounts</div>', unsafe_allow_html=True)
+
+    investment_accounts.sort(key=lambda a: -a['balance'])
+
+    subtype_labels = {
+        'brokerage': '📊 Brokerage', 'roth': '🏦 Roth IRA',
+        'sep ira': '🏦 SEP IRA', '401k': '🏢 401(k)',
+        'manual': '✏️ Manual Entry'
+    }
+
+    if "expanded_acct" not in st.session_state:
+        st.session_state["expanded_acct"] = None
+
+    for i in range(0, len(investment_accounts), 2):
+        cols = st.columns(2)
+        for j, col in enumerate(cols):
+            if i + j >= len(investment_accounts):
+                continue
+            acct = investment_accounts[i + j]
+            subtype_label = subtype_labels.get(acct['subtype'], acct['subtype'].title())
+            acct_holdings = holdings_by_account.get(acct['name'], [])
+            holding_count = len([h for h in acct_holdings if h['symbol'] != 'CUR:USD'])
+            acct_bal = acct['balance']
+            is_expanded = st.session_state["expanded_acct"] == acct['name']
+            arrow = "▼" if is_expanded else "▶"
+
+            with col:
+                st.markdown(f"""
+                <div style="background:linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%);
+                            border:1px solid rgba(96,165,250,{'0.3' if is_expanded else '0.15'});border-radius:14px;padding:14px 18px;margin-bottom:4px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <span style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">{subtype_label}</span>
+                            <span style="color:#64748b;margin:0 6px;">·</span>
+                            <span style="font-size:14px;font-weight:700;color:#e2e8f0;">{acct['name']}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="font-size:22px;font-weight:800;color:#60a5fa;">${acct_bal:,.2f}</span>
+                            <span style="font-size:11px;color:#64748b;margin-left:8px;">{holding_count} holdings</span>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if holding_count > 0:
+                    if st.button(f"{arrow} {'Hide' if is_expanded else 'View'} Holdings", key=f"expand_{acct['name']}", use_container_width=True):
+                        if is_expanded:
+                            st.session_state["expanded_acct"] = None
+                        else:
+                            st.session_state["expanded_acct"] = acct['name']
+                        st.rerun()
+
+        # Render holdings below the row for whichever account in this row is expanded
+        for j in range(2):
+            if i + j >= len(investment_accounts):
+                continue
+            acct = investment_accounts[i + j]
+            if st.session_state["expanded_acct"] != acct['name']:
+                continue
+
+            acct_holdings = holdings_by_account.get(acct['name'], [])
+            acct_bal = acct['balance']
+            if not acct_holdings:
+                continue
+
+            # Calculate proportional values for 401k (NAV lookup + scaling)
+            has_values = any(h['value'] > 0 for h in acct_holdings if h['symbol'] != 'Loan')
+            if not has_values and acct_bal > 0:
+                navs = get_fund_navs()
+                raw_values = {}
+                loan_value = 0
+                for h in acct_holdings:
+                    if h['symbol'] == 'Loan' or h['name'] == 'Loan':
+                        # John Hancock loan: quantity IS the dollar value
+                        loan_value = h['quantity']
+                        h['_calc_value'] = loan_value
+                        continue
+                    nav = navs.get(h['name'], 0)
+                    raw_values[h['name']] = (nav * h['quantity']) if nav > 0 else h['quantity']
+                raw_total = sum(raw_values.values())
+                invested = acct_bal - loan_value
+                for h in acct_holdings:
+                    if h['symbol'] == 'Loan' or h['name'] == 'Loan':
+                        continue
+                    raw = raw_values.get(h['name'], 0)
+                    if raw_total > 0:
+                        h['_calc_value'] = invested * (raw / raw_total)
+                        h['_calc_pct'] = (raw / raw_total) * 100
+
+            sorted_holdings = sorted(acct_holdings, key=lambda h: -(h.get('_calc_value', 0) or h['value'] or h['quantity']))
+
+            for h in sorted_holdings:
+                if h['symbol'] == 'CUR:USD' and h['value'] < 1:
+                    continue
+
+                gl_color, gl_display = '#64748b', ''
+                gl_text = h['gain_loss']
+                if gl_text:
+                    try:
+                        gl_num = float(gl_text.replace('%', ''))
+                        gl_color = '#34d399' if gl_num >= 0 else '#fb7185'
+                        gl_display = f"{gl_num:+.2f}%"
+                    except (ValueError, TypeError):
+                        pass
+
+                is_loan = h['symbol'] == 'Loan' or h['name'] == 'Loan'
+                if is_loan:
+                    title = "<span style='color:#fbbf24;font-weight:600;'>📋 401(k) Loan</span>"
+                elif h['symbol'] and h['symbol'] not in ('CUR:USD', 'Loan', '') and h['symbol'] != h['name']:
+                    title = f"<span style='color:#60a5fa;font-weight:700;'>{h['symbol']}</span> <span style='color:#64748b;'>- {h['name'][:45]}</span>"
+                else:
+                    mapped = FUND_TICKER_MAP.get(h['name'], '')
+                    if mapped:
+                        title = f"<span style='color:#60a5fa;font-weight:700;'>{mapped}</span> <span style='color:#64748b;'>- {h['name'][:45]}</span>"
+                    else:
+                        title = f"<span style='color:#cbd5e1;font-weight:600;'>{h['name'][:55]}</span>"
+
+                calc_val = h.get('_calc_value', 0)
+                calc_pct = h.get('_calc_pct', 0)
+
+                if is_loan:
+                    val_display = f"${h['quantity']:,.2f}"
+                    pct_display = "<span style='color:#fbbf24;font-size:12px;'>Outstanding balance</span>"
+                    detail = ""
+                elif calc_val > 0 and h['value'] == 0:
+                    val_display = f"${calc_val:,.2f}"
+                    pct_display = f"<span style='color:#94a3b8;font-size:12px;'>{calc_pct:.1f}% of account</span>"
+                    detail = f"{h['quantity']:,.2f} shares (est. value)"
+                elif h['value'] > 0:
+                    val_display = f"${h['value']:,.2f}"
+                    pct_of_acct = (h['value'] / acct_bal * 100) if acct_bal > 0 else 0
+                    detail = f"{h['quantity']:,.2f} shares"
+                    if h['price'] > 0:
+                        detail += f" @ ${h['price']:,.2f}"
+                    if gl_display:
+                        pct_display = f"<span style='color:{gl_color};font-size:12px;font-weight:600;'>{gl_display}</span> <span style='color:#64748b;font-size:11px;'>| {pct_of_acct:.1f}%</span>"
+                    else:
+                        pct_display = f"<span style='color:#94a3b8;font-size:12px;'>{pct_of_acct:.1f}% of account</span>"
+                else:
+                    val_display, pct_display = "", ""
+                    detail = f"{h['quantity']:,.2f} shares"
+
+                st.markdown(f'<div class="holding-row"><div style="flex:1;"><div>{title}</div><div class="holding-detail">{detail}</div></div><div style="text-align:right;"><div class="holding-val">{val_display}</div>{pct_display}</div></div>', unsafe_allow_html=True)
+
+            if not has_values:
+                st.markdown('<div style="font-size:11px;color:#64748b;text-align:center;margin-top:8px;">💡 Values estimated from fund NAVs scaled to account total. Percentages are accurate.</div>', unsafe_allow_html=True)
+
+    # Allocation breakdown by account subtype
+    st.markdown('<div class="section-header">🎯 Allocation</div>', unsafe_allow_html=True)
+
+    by_type = {}
+    for acct in investment_accounts:
+        st_key = acct['subtype']
+        if st_key in ('brokerage',):
+            group = 'Brokerage'
+        elif st_key in ('roth', 'sep ira'):
+            group = 'Retirement (IRA)'
+        elif st_key in ('401k',):
+            group = 'Retirement (401k)'
+        else:
+            group = 'Other'
+        by_type[group] = by_type.get(group, 0) + acct['balance']
+
+    color_map = {'Brokerage': '#60a5fa', 'Retirement (IRA)': '#34d399', 'Retirement (401k)': '#a78bfa', 'Other': '#fbbf24'}
+    chart_colors = [color_map.get(k, '#64748b') for k in by_type.keys()]
+
+    fig = go.Figure(data=[go.Pie(
+        labels=list(by_type.keys()), values=list(by_type.values()), hole=0.6,
+        marker=dict(colors=chart_colors, line=dict(color='rgba(10,14,26,0.8)', width=3)),
+        textinfo='percent', textfont=dict(size=12, color='#e2e8f0', family='Inter'),
+        hovertemplate='<b>%{label}</b><br>$%{value:,.2f}<br>%{percent}<extra></extra>',
+        pull=[0.015] * len(by_type), direction='clockwise', sort=True,
+    )])
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#e2e8f0', family='Inter'), height=380,
+        margin=dict(l=10, r=10, t=10, b=10),
+        legend=dict(font=dict(size=11, color='#94a3b8', family='Inter'), bgcolor='rgba(0,0,0,0)',
+                    orientation='v', yanchor='middle', y=0.5, itemclick=False, itemdoubleclick=False),
+        showlegend=True,
+    )
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+    # Balance History
+    if not balance_history.empty and 'Account Type' in balance_history.columns:
+        inv_history = balance_history[balance_history['Account Type'] == 'investment'].copy()
+        if not inv_history.empty and 'Balance' in inv_history.columns:
+            inv_history['bal'] = inv_history['Balance'].apply(parse_finta_amount)
+            st.markdown('<div class="section-header">📋 Balance History Snapshot</div>', unsafe_allow_html=True)
+            by_acct = inv_history.groupby('Account')['bal'].last().sort_values(ascending=False)
+            for acct_name, bal in by_acct.items():
+                current = next((a['balance'] for a in investment_accounts if a['name'] == acct_name), bal)
+                change = current - bal
+                change_pct = (change / bal * 100) if bal > 0 else 0
+                arrow = "↑" if change >= 0 else "↓"
+                change_color = "#34d399" if change >= 0 else "#fb7185"
+                st.markdown(f"""
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;
+                            border-bottom:1px solid rgba(255,255,255,0.04);font-size:14px;">
+                    <span style="color:#cbd5e1;">{acct_name}</span>
+                    <span style="color:{change_color};font-weight:600;">
+                        {arrow} ${abs(change):,.2f} ({change_pct:+.1f}%)
+                    </span>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # Manual accounts note
+    manual_inv = [a for a in investment_accounts if a['source'].startswith('Manual')]
+    if manual_inv:
+        names = ", ".join(a['name'] for a in manual_inv)
+        st.markdown(f"""
+        <div style="text-align:center;margin-top:24px;padding:12px;background:rgba(251,191,36,0.08);
+                    border:1px solid rgba(251,191,36,0.2);border-radius:12px;font-size:12px;color:#fbbf24;">
+            ✏️ Manual accounts ({names}) - update balances in the "Manual Accounts" tab of your Finta Google Sheet
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# ========================
+# PRODUCTION DASHBOARD
+# ========================
+def run_production(config):
+    """Full production dashboard powered by Finta data."""
+    data = load_finta_data()
+    if data is None:
+        return
+
+    accounts_df = data.get('Accounts', pd.DataFrame())
+    transactions = data.get('Transactions', pd.DataFrame())
+    manual = get_manual_balances(data.get('Manual Accounts', pd.DataFrame()))
+    balances = get_account_balances(accounts_df)
+
+    # Config values
+    FIXED_EXPENSES = config.get('fixed_expenses', {})
+    DUE_DATES = config.get('due_dates', {})
+    # Convert [day, amount] lists to tuples
+    DUE_DATES = {k: tuple(v) if isinstance(v, list) else v for k, v in DUE_DATES.items()}
+    MONTHLY_INCOME = config.get('monthly_income', 0)
+    PLOC_LIMIT = config.get('ploc_limit', 0)
+    PLOC_APR = config.get('ploc_apr', 0)
+    family_name = config.get('family_name', 'Family Budget')
+
+    # Title
+    st.markdown(f'<div class="dashboard-title">💰 {family_name}</div>', unsafe_allow_html=True)
+
+    # View toggle
+    if "view_mode" not in st.session_state:
+        st.session_state["view_mode"] = "daily"
+
+    toggle_col1, tc_daily, tc_invest, toggle_col4 = st.columns([2, 1, 1, 2])
+    with tc_daily:
+        if st.button("💵 Daily Finances", key="btn_daily", use_container_width=True,
+                      type="primary" if st.session_state["view_mode"] == "daily" else "secondary"):
+            st.session_state["view_mode"] = "daily"
+            st.rerun()
+    with tc_invest:
+        if st.button("📈 Investments", key="btn_invest", use_container_width=True,
+                      type="primary" if st.session_state["view_mode"] == "investments" else "secondary"):
+            st.session_state["view_mode"] = "investments"
+            st.rerun()
+
+    if st.session_state["view_mode"] == "investments":
+        render_production_investments_view(data, manual)
+        st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">{family_name.upper()} &nbsp;•&nbsp; Data synced via Finta</div>', unsafe_allow_html=True)
+        return
+
+    # Period selector
+    available_months = get_available_months(transactions) if not transactions.empty else []
+    now = datetime.now()
+    current_label = now.strftime("%B %Y")
+
+    period_options = [f"📅 {current_label} (Current)"]
+    period_keys = ['current']
+    for m in available_months:
+        y, mo = int(m[:4]), int(m[5:7])
+        if y == now.year and mo == now.month:
+            continue
+        from calendar import month_name
+        period_options.append(f"{month_name[mo]} {y}")
+        period_keys.append(m)
+    period_options.append("📊 Year to Date (YTD)")
+    period_keys.append('ytd')
+
+    sel_col1, sel_col2, sel_col3 = st.columns([1, 2, 1])
+    with sel_col2:
+        selected_idx = st.selectbox("View Period", range(len(period_options)),
+            format_func=lambda i: period_options[i], index=0, label_visibility="collapsed")
+
+    selected_period = period_keys[selected_idx]
+    is_ytd = selected_period == 'ytd'
+
+    if is_ytd:
+        subtitle_text = f"{now.year} Year to Date &nbsp;•&nbsp; Auto-synced via Finta"
+    elif selected_period == 'current':
+        subtitle_text = f"{current_label} &nbsp;•&nbsp; Auto-synced via Finta"
+    else:
+        y, mo = int(selected_period[:4]), int(selected_period[5:7])
+        from calendar import month_name
+        subtitle_text = f"{month_name[mo]} {y} &nbsp;•&nbsp; Auto-synced via Finta"
+    st.markdown(f'<div class="dashboard-subtitle">{subtitle_text}</div>', unsafe_allow_html=True)
+
+    # Spending
+    monthly_tx, monthly_total = get_filtered_spending(transactions, selected_period) if not transactions.empty else (pd.DataFrame(), 0)
+
+    months_elapsed = now.month if is_ytd else 1
+    income_for_period = MONTHLY_INCOME * months_elapsed
+    total_fixed_monthly = sum(sum(cat.values()) for cat in FIXED_EXPENSES.values())
+    total_fixed = total_fixed_monthly * months_elapsed
+    spendable = income_for_period - total_fixed - monthly_total
+
+    # Account balances
+    bonvoy_bal = balances.get('bonvoy', {}).get('balance', 0)
+    bonvoy_limit = balances.get('bonvoy', {}).get('limit', 0)
+    savings_bal = balances.get('savings', {}).get('balance', 0)
+
+    # Manual accounts for cash totals
+    ssfcu_checking = manual.get('SSFCU Checking', {}).get('balance', 0)
+    ssfcu_savings = manual.get('SSFCU Savings', {}).get('balance', 0)
+    total_cash = savings_bal + ssfcu_checking + ssfcu_savings
+
+    # Investment total
+    inv_total = balances.get('investments', {}).get('balance', 0)
+    for acct_name, acct_data in manual.items():
+        if acct_data.get('type') == 'investment':
+            inv_total += acct_data['balance']
+
+    budget_used_pct = ((total_fixed + monthly_total) / income_for_period * 100) if income_for_period > 0 else 0
+
+    # === KPI ROW 1 ===
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        color = "green" if spendable > 200 else ("yellow" if spendable > 0 else "red")
+        render_kpi("Spendable Left", spendable, color,
+                   sub=f"${income_for_period:,.0f} income − ${total_fixed:,.0f} fixed − ${monthly_total:,.0f} spent")
+    with c2:
+        if bonvoy_limit > 0:
+            pct = bonvoy_bal / bonvoy_limit * 100
+            color = "red" if pct > 70 else ("yellow" if pct > 40 else "green")
+            render_kpi("Bonvoy Balance", bonvoy_bal, color,
+                       sub=f"{pct:.0f}% of ${bonvoy_limit:,.0f} limit")
+        else:
+            render_kpi("Credit Used", bonvoy_bal, "green" if bonvoy_bal == 0 else "yellow")
+    with c3:
+        cash_parts = []
+        if savings_bal > 0:
+            cash_parts.append("Wells Fargo")
+        if ssfcu_checking > 0 or ssfcu_savings > 0:
+            cash_parts.append("SSFCU")
+        render_kpi("Cash + Savings", total_cash, "blue",
+                   sub=" + ".join(cash_parts) if cash_parts else "All accounts")
+
+    # === KPI ROW 2 ===
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        render_kpi("Monthly Income", income_for_period, "teal",
+                   sub=f"{'(' + str(months_elapsed) + ' months)' if is_ytd else 'Take-home pay'}")
+    with c2:
+        render_kpi("Fixed Bills", total_fixed, "orange",
+                   sub=f"{sum(len(v) for v in FIXED_EXPENSES.values())} recurring items{' x ' + str(months_elapsed) + ' months' if is_ytd else ''}")
+    with c3:
+        render_kpi("Spent (Variable)", monthly_total, "purple" if monthly_total > 0 else "green",
+                   sub=f"{len(monthly_tx)} transactions")
+    with c4:
+        render_kpi("Investments", inv_total, "green", sub="All accounts")
+
+    # === DONUT + GAUGE ===
+    st.markdown('<div class="section-header">📊 Spending Breakdown & Budget Health</div>', unsafe_allow_html=True)
+    col_donut, col_gauge = st.columns([3, 2])
+    with col_donut:
+        st.plotly_chart(make_donut(monthly_tx), width='stretch', config={'displayModeBar': False})
+    with col_gauge:
+        st.plotly_chart(make_budget_gauge(budget_used_pct), width='stretch', config={'displayModeBar': False})
+        if budget_used_pct < 75:
+            st.markdown('<p style="text-align:center;color:#34d399;font-size:14px;font-weight:600;">✅ On track</p>', unsafe_allow_html=True)
+        elif budget_used_pct < 95:
+            st.markdown('<p style="text-align:center;color:#fbbf24;font-size:14px;font-weight:600;">⚠️ Watch spending</p>', unsafe_allow_html=True)
+        else:
+            st.markdown('<p style="text-align:center;color:#fb7185;font-size:14px;font-weight:600;">🚨 Over budget</p>', unsafe_allow_html=True)
+
+    # === CATEGORY DRILL-DOWN ===
+    if not monthly_tx.empty and 'Category Group' in monthly_tx.columns:
+        by_group = monthly_tx.groupby('Category Group')['spend'].sum().sort_values(ascending=False)
+        cat_options = ['Select a category to drill down...'] + [f"{cat} (${amt:,.2f})" for cat, amt in by_group.items() if amt > 0]
+        cat_keys = [None] + [cat for cat, amt in by_group.items() if amt > 0]
+        if "drill_gen" not in st.session_state:
+            st.session_state["drill_gen"] = 0
+        dc1, dc2, dc3 = st.columns([1, 2, 1])
+        with dc2:
+            sel_cat_idx = st.selectbox("Drill down", range(len(cat_options)), format_func=lambda i: cat_options[i],
+                index=0, label_visibility="collapsed", key=f"cat_drill_{st.session_state['drill_gen']}")
+        selected_category = cat_keys[sel_cat_idx] if sel_cat_idx > 0 else None
+
+        if selected_category:
+            cat_tx = monthly_tx[monthly_tx['Category Group'] == selected_category].copy()
+            cat_total, cat_count = cat_tx['spend'].sum(), len(cat_tx)
+            st.markdown(f'<div style="background:linear-gradient(145deg, rgba(30,41,59,0.6) 0%, rgba(15,23,42,0.8) 100%);border-radius:16px;padding:20px 24px;margin:8px 0 16px 0;border:1px solid rgba(96,165,250,0.2);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><span style="font-size:16px;font-weight:700;color:#60a5fa;">🔍 {selected_category}</span><span style="font-size:14px;color:#94a3b8;">{cat_count} transactions &nbsp;•&nbsp; ${cat_total:,.2f}</span></div>', unsafe_allow_html=True)
+            if 'Category Name' in cat_tx.columns:
+                by_sub = cat_tx.groupby('Category Name')['spend'].agg(['sum', 'count']).reset_index().sort_values('sum', ascending=False)
+                for _, sub in by_sub.iterrows():
+                    pct = (sub['sum'] / cat_total * 100) if cat_total > 0 else 0
+                    st.markdown(f'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;"><span style="color:#cbd5e1;">{sub["Category Name"]} <span style="color:#475569;">({int(sub["count"])})</span></span><span style="color:#e2e8f0;font-weight:600;">${sub["sum"]:,.2f} <span style="color:#475569;font-weight:400;">({pct:.0f}%)</span></span></div><div style="background:rgba(255,255,255,0.06);border-radius:3px;height:4px;margin-bottom:4px;"><div style="width:{max(pct,2)}%;height:100%;background:#60a5fa;border-radius:3px;"></div></div>', unsafe_allow_html=True)
+            st.markdown('<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);"><div style="font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Transactions</div>', unsafe_allow_html=True)
+            for _, tx in cat_tx.sort_values('parsed_date', ascending=False).iterrows():
+                st.markdown(f'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span style="color:#64748b;min-width:50px;">{tx["parsed_date"].strftime("%b %d")}</span><span style="color:#94a3b8;flex:1;padding:0 12px;">{str(tx.get("Merchant",""))[:35]}</span><span style="color:#fb7185;font-weight:600;">${tx["spend"]:,.2f}</span></div>', unsafe_allow_html=True)
+            st.markdown('</div></div>', unsafe_allow_html=True)
+            if st.button("✕ Close Details", key="close_drill"):
+                st.session_state["drill_gen"] += 1
+                st.rerun()
+
+    # === FIXED EXPENSES ===
+    if FIXED_EXPENSES:
+        st.markdown('<div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;margin:12px 0 8px 0;">Fixed Expenses</div>', unsafe_allow_html=True)
+        non_empty = {k: v for k, v in FIXED_EXPENSES.items() if v}
+        if non_empty:
+            exp_cols = st.columns(min(len(non_empty), 4))
+            for i, (cat_name, items) in enumerate(non_empty.items()):
+                cat_total = sum(items.values())
+                with exp_cols[i % len(exp_cols)]:
+                    with st.expander(f"**{cat_name}** — ${cat_total:,.0f}/mo"):
+                        for item_name, amount in sorted(items.items(), key=lambda x: -x[1]):
+                            pct_of_cat = max((amount / cat_total * 100) if cat_total > 0 else 0, 2)
+                            st.markdown(f'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px;"><span style="color:#94a3b8;">{item_name}</span><span style="color:#e2e8f0;font-weight:600;">${amount:,.0f}</span></div><div style="background:rgba(255,255,255,0.06);border-radius:3px;height:4px;margin-bottom:6px;"><div style="width:{pct_of_cat}%;height:100%;background:#60a5fa;border-radius:3px;"></div></div>', unsafe_allow_html=True)
+
+    # === CREDIT & DEBT ===
+    st.markdown('<div class="section-header">💳 Credit & Debt</div>', unsafe_allow_html=True)
+    if bonvoy_limit > 0:
+        render_progress(balances.get('bonvoy', {}).get('name', 'Bonvoy Visa'), bonvoy_bal, bonvoy_limit)
+
+    # PLOC
+    if PLOC_LIMIT > 0:
+        ploc_data = manual.get('SSFCU PLOC', {})
+        ploc_bal = ploc_data.get('balance', 0)
+        ploc_label = "PLOC (SSFCU)"
+        if ploc_data.get('last_updated'):
+            ploc_label += f" - updated {ploc_data['last_updated']}"
+        render_progress(ploc_label, ploc_bal, PLOC_LIMIT)
+
+    # Tesla loan
+    tesla_bal = balances.get('tesla_loan', {}).get('balance', 0)
+    if tesla_bal > 0:
+        render_progress("Tesla Auto Loan", tesla_bal, 22000)
+
+    # === DUE DATES ===
+    if DUE_DATES:
+        st.markdown('<div class="section-header">📅 Upcoming Due Dates</div>', unsafe_allow_html=True)
+        today = datetime.now().day
+        dues_sorted = sorted(DUE_DATES.items(), key=lambda x: x[1] if isinstance(x[1], int) else x[1][0])
+
+        upcoming = []
+        rest = []
+        for name, val in dues_sorted:
+            day, amount = (val, 0) if isinstance(val, int) else val
+            days_away = day - today if day >= today else day + 31 - today
+            if day < today:
+                rest.append((name, day, amount, "✅ Paid", "#34d399"))
+            elif days_away <= 14:
+                if day - today <= 5:
+                    upcoming.append((name, day, amount, "⚡ Due Soon", "#fbbf24"))
+                else:
+                    upcoming.append((name, day, amount, f"In {day - today} days", "#64748b"))
+            else:
+                rest.append((name, day, amount, f"In {day - today} days", "#64748b"))
+
+        def render_due_rows(items):
+            c1, c2 = st.columns(2)
+            mid = len(items) // 2
+            for i, (n, d, a, s, clr) in enumerate(items):
+                col = c1 if i <= mid else c2
+                amt_html = f'<span style="color:#e2e8f0;font-weight:600;font-size:13px;margin-left:8px;">${a:,.0f}</span>' if a > 0 else ''
+                with col:
+                    st.markdown(f'<div class="due-row"><span class="due-name">{n}{amt_html}</span><span class="due-date" style="color:{clr}">{d}th — {s}</span></div>', unsafe_allow_html=True)
+
+        render_due_rows(upcoming)
+
+        if rest:
+            if "show_all_dues" not in st.session_state:
+                st.session_state["show_all_dues"] = False
+            if st.session_state["show_all_dues"]:
+                render_due_rows(rest)
+                if st.button("Show Less", key="due_less"):
+                    st.session_state["show_all_dues"] = False
+                    st.rerun()
+            else:
+                if st.button(f"Show {len(rest)} More", key="due_more"):
+                    st.session_state["show_all_dues"] = True
+                    st.rerun()
+
+    # === RECENT TRANSACTIONS ===
+    if not monthly_tx.empty:
+        st.markdown('<div class="section-header">🧾 Recent Transactions</div>', unsafe_allow_html=True)
+        PAGE_SIZE = 15
+        all_tx = monthly_tx.sort_values('parsed_date', ascending=False)
+        total_tx = len(all_tx)
+        if "tx_show_count" not in st.session_state:
+            st.session_state["tx_show_count"] = PAGE_SIZE
+        show_count = min(st.session_state["tx_show_count"], total_tx)
+        visible_tx = all_tx.head(show_count)
+        table_html = '<table class="tx-table"><thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Amount</th></tr></thead><tbody>'
+        for _, row in visible_tx.iterrows():
+            table_html += f'<tr><td>{row["parsed_date"].strftime("%b %d")}</td><td>{str(row.get("Merchant",""))[:30]}</td><td>{str(row.get("Category Group",""))}</td><td style="color:#fb7185;font-weight:600;">-${row["spend"]:,.2f}</td></tr>'
+        table_html += '</tbody></table>'
+        st.markdown(table_html, unsafe_allow_html=True)
+        st.markdown(f'<p style="text-align:center;color:#64748b;font-size:12px;margin-top:8px;">Showing {show_count} of {total_tx} transactions</p>', unsafe_allow_html=True)
+        if show_count < total_tx:
+            if st.button(f"Show More ({min(PAGE_SIZE, total_tx - show_count)} more)", key="more_tx"):
+                st.session_state["tx_show_count"] = show_count + PAGE_SIZE
+                st.rerun()
+        if show_count > PAGE_SIZE:
+            if st.button("Show Less", key="less_tx"):
+                st.session_state["tx_show_count"] = PAGE_SIZE
+                st.rerun()
+    else:
+        st.markdown('<p style="color:#64748b;text-align:center;">No transactions this month yet.</p>', unsafe_allow_html=True)
+
+    # === FOOTER ===
+    st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">{family_name.upper()} &nbsp;•&nbsp; Data synced via Finta</div>', unsafe_allow_html=True)
+
+
+# ========================
 # MAIN DASHBOARD
 # ========================
 def main():
+    if IS_PRODUCTION:
+        run_production(_APP_CONFIG)
+        return
+
     # Show reset confirmation banner
     if st.session_state.get('show_reset_banner'):
         st.markdown('<div style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#34d399;font-weight:600;font-size:14px;text-align:center;">✅ All settings have been reset to defaults.</div>', unsafe_allow_html=True)
