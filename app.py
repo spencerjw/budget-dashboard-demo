@@ -470,7 +470,7 @@ if st.session_state.get("view_mode") != "investments":
     col_demo, col_budget = st.columns(2)
     with col_demo:
         demo_type = "primary" if st.session_state['mode'] == 'demo' else "secondary"
-        if st.button("🎲 Test Data", use_container_width=True, type=demo_type):
+        if st.button("🎲 Demo Test Data", use_container_width=True, type=demo_type):
             st.session_state['mode'] = 'demo'
             st.rerun()
     with col_budget:
