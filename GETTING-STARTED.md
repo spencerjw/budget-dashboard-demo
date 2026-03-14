@@ -210,9 +210,17 @@ Opens in your browser at `localhost:8501`. Only runs while the terminal is open.
 
 ## Auto-Sync (Advanced -- Optional)
 
-If you want the dashboard to always have current data without manual CSV uploads, you can connect it to [Finta](https://www.finta.io/) ($5.83/month). Finta syncs your bank accounts to a Google Sheet automatically. See the [README](README.md) for setup instructions.
+Everything above — the sidebar inputs, CSV uploads, manual balance entry — is the **demo experience**. It works, but it's manual. The real experience is fully automated.
 
-Most people don't need this. Monthly CSV uploads work fine.
+**[Finta](https://www.finta.io/)** ($5.83/month) connects your bank accounts, credit cards, and brokerages to a Google Sheet and syncs transactions automatically. Finta uses **[Plaid](https://plaid.com/)** to connect to your accounts — the same secure bank-connection infrastructure behind Chase, Vanguard, Venmo, and thousands of other financial apps. Plaid is SOC 2 Type II certified, connects to 12,000+ financial institutions, and never stores your bank login credentials.
+
+**What changes with Finta connected:**
+- Transactions sync daily — no more downloading and uploading CSVs
+- Account balances stay current automatically
+- The sidebar simplifies to just viewing controls — no manual data entry
+- You get accurate spending data without remembering to export anything
+
+**Setup takes about 10 minutes.** You create a Finta account, connect your bank(s) through Plaid's secure flow, point Finta at a Google Sheet, and configure the dashboard to read from it. After that, the dashboard just works. See the [README](README.md#demo-vs-real-setup) for more.
 
 ---
 

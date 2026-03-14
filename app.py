@@ -484,6 +484,7 @@ if st.session_state.get("view_mode") != "investments":
     
     if not is_my_budget:
         st.info("👀 Viewing sample data for a fictional family. Switch to **💰 My Budget** to build your own.")
+        st.caption("The sidebar controls below exist because this is a demo without real bank connections. In a real setup, you connect your accounts through [Finta](https://www.finta.io/), which uses [Plaid](https://plaid.com/) — the same secure bank-connection layer trusted by Chase, Vanguard, and major financial institutions worldwide — to sync transactions automatically. No manual entry needed.")
     else:
         st.markdown("🔒 **Your data never leaves your browser.** No accounts, no servers, no tracking. Everything you enter stays on this device only.")
         

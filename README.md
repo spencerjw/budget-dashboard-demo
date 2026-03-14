@@ -102,11 +102,15 @@ If your bank's CSV has these columns (most do), it'll work. You don't need to re
 
 ---
 
-## Auto-Sync with Finta (Advanced — Optional)
+## Demo vs. Real Setup
 
-> **This section is for people comfortable with Google accounts and spreadsheets.** Most people should stick with CSV upload — it's simpler and works great.
+The sidebar controls, manual inputs, and CSV uploads exist because **this is a demo** — there are no real bank accounts connected.
 
-[Finta](https://www.finta.io/) ($5.83/month) connects to your bank accounts and automatically writes transactions into a Google Sheet daily. See the full setup instructions in the [Getting Started Guide](GETTING-STARTED.md#auto-sync-advanced--optional).
+In a real installation, you connect your accounts through **[Finta](https://www.finta.io/)** ($5.83/month), which syncs your bank and brokerage transactions automatically into a Google Sheet. Finta uses **[Plaid](https://plaid.com/)** under the hood — the same secure bank-connection layer trusted by Chase, Vanguard, Venmo, and major financial institutions worldwide. Plaid is SOC 2 Type II certified and connects to 12,000+ institutions.
+
+**After initial setup, the dashboard just works.** Transactions flow in daily, balances stay current, and there's nothing to upload or enter manually. The sidebar simplifies down to just viewing controls.
+
+See the full Finta setup instructions in the [Getting Started Guide](GETTING-STARTED.md#auto-sync-advanced--optional).
 
 ---
 
