@@ -470,12 +470,12 @@ if st.session_state.get("view_mode") != "investments":
     col_demo, col_budget = st.columns(2)
     with col_demo:
         demo_type = "primary" if st.session_state['mode'] == 'demo' else "secondary"
-        if st.button("🎲 Demo", use_container_width=True, type=demo_type):
+        if st.button("🎲 Test Data", use_container_width=True, type=demo_type):
             st.session_state['mode'] = 'demo'
             st.rerun()
     with col_budget:
         budget_type = "primary" if st.session_state['mode'] == 'budget' else "secondary"
-        if st.button("💰 My Budget", use_container_width=True, type=budget_type):
+        if st.button("💰 Try with My Data", use_container_width=True, type=budget_type):
             st.session_state['mode'] = 'budget'
             st.rerun()
     
@@ -483,7 +483,7 @@ if st.session_state.get("view_mode") != "investments":
     cfg = st.session_state['config']
     
     if not is_my_budget:
-        st.info("👀 Viewing sample data for a fictional family. Switch to **💰 My Budget** to build your own.")
+        st.info("👀 Viewing sample data for a fictional family. Switch to **💰 Try with My Data** to build your own.")
         st.caption("The sidebar controls below exist because this is a demo without real bank connections. In a real setup, you connect your accounts through [Finta](https://www.finta.io/), which uses [Plaid](https://plaid.com/) — the same secure bank-connection layer trusted by Chase, Vanguard, and major financial institutions worldwide — to sync transactions automatically. No manual entry needed.")
     else:
         st.markdown("🔒 **Your data never leaves your browser.** No accounts, no servers, no tracking. Everything you enter stays on this device only.")
@@ -818,7 +818,7 @@ else:
         if acct.get('type') in ('credit', 'loan') and acct.get('due_day', 0) > 0:
             DUE_DATES[acct['name']] = acct['due_day']
     badge_class = "custom-badge"
-    badge_text = "💰 My Budget"
+    badge_text = "💰 Try with My Data"
     
     # CSV upload was placed at top of sidebar - now handle the data
     csv_files = st.session_state.get('csv_upload', [])
