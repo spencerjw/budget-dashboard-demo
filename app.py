@@ -1031,25 +1031,8 @@ def main():
     period_options.append("📊 Year to Date (YTD)")
     period_keys.append('ytd')
     
-    sel_col1, sel_col2, sel_col3 = st.columns([1, 2, 1])
-    with sel_col2:
-        selected_idx = st.selectbox("View Period", range(len(period_options)),
-            format_func=lambda i: period_options[i], index=0, label_visibility="collapsed")
-    
-    selected_period = period_keys[selected_idx]
-    is_ytd = selected_period == 'ytd'
-    
-    source_label = "Sample Data" if is_demo else "Your Data"
-    if is_ytd: subtitle_text = f"{now.year} Year to Date &nbsp;•&nbsp; {source_label}"
-    elif selected_period == 'current': subtitle_text = f"{current_label} &nbsp;•&nbsp; {source_label}"
-    else:
-        y, mo = int(selected_period[:4]), int(selected_period[5:7])
-        from calendar import month_name
-        subtitle_text = f"{month_name[mo]} {y} &nbsp;•&nbsp; {source_label}"
-    st.markdown(f'<div class="dashboard-subtitle">{subtitle_text}</div>', unsafe_allow_html=True)
-
     # ========================
-    # VIEW TOGGLE (pill style)
+    # VIEW TOGGLE (pill style) - above date selector
     # ========================
     if "view_mode" not in st.session_state:
         st.session_state["view_mode"] = "daily"
@@ -1078,6 +1061,24 @@ def main():
         render_investments_view()
         st.markdown('<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly</div>', unsafe_allow_html=True)
         return
+
+    # Date selector (daily finances only)
+    sel_col1, sel_col2, sel_col3 = st.columns([1, 2, 1])
+    with sel_col2:
+        selected_idx = st.selectbox("View Period", range(len(period_options)),
+            format_func=lambda i: period_options[i], index=0, label_visibility="collapsed")
+    
+    selected_period = period_keys[selected_idx]
+    is_ytd = selected_period == 'ytd'
+    
+    source_label = "Sample Data" if is_demo else "Your Data"
+    if is_ytd: subtitle_text = f"{now.year} Year to Date &nbsp;•&nbsp; {source_label}"
+    elif selected_period == 'current': subtitle_text = f"{current_label} &nbsp;•&nbsp; {source_label}"
+    else:
+        y, mo = int(selected_period[:4]), int(selected_period[5:7])
+        from calendar import month_name
+        subtitle_text = f"{month_name[mo]} {y} &nbsp;•&nbsp; {source_label}"
+    st.markdown(f'<div class="dashboard-subtitle">{subtitle_text}</div>', unsafe_allow_html=True)
 
     monthly_tx, monthly_total = get_filtered_spending(transactions, selected_period) if transactions is not None and not transactions.empty else (pd.DataFrame(), 0)
     
