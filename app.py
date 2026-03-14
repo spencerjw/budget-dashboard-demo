@@ -66,6 +66,59 @@ DEMO_ACCOUNTS = [
     {'name': 'Retirement 401(k)', 'type': 'investment', 'balance': 12000, 'limit': 0},
 ]
 
+# ========================
+# DEMO INVESTMENT DATA
+# ========================
+DEMO_INVESTMENT_ACCOUNTS = [
+    {'name': 'Vanguard Brokerage', 'subtype': 'brokerage', 'balance': 47832.50},
+    {'name': 'Fidelity 401(k)', 'subtype': '401k', 'balance': 128450.75},
+    {'name': 'E*TRADE Roth IRA', 'subtype': 'roth', 'balance': 34215.30},
+    {'name': 'Schwab Taxable', 'subtype': 'brokerage', 'balance': 21890.00},
+]
+
+def _gen_holdings():
+    """Generate fake but realistic holdings for demo investment accounts."""
+    rng = random.Random(42)
+    holdings_map = {
+        'Vanguard Brokerage': [
+            {'symbol': 'VTI', 'name': 'Vanguard Total Stock Market ETF', 'quantity': 85.0, 'price': 248.50, 'gain_loss': 18.4},
+            {'symbol': 'VXUS', 'name': 'Vanguard Total Intl Stock ETF', 'quantity': 120.0, 'price': 58.30, 'gain_loss': -2.1},
+            {'symbol': 'BND', 'name': 'Vanguard Total Bond Market ETF', 'quantity': 60.0, 'price': 72.15, 'gain_loss': 1.8},
+            {'symbol': 'AAPL', 'name': 'Apple Inc', 'quantity': 25.0, 'price': 189.25, 'gain_loss': 42.6},
+        ],
+        'Fidelity 401(k)': [
+            {'symbol': 'FXAIX', 'name': 'Fidelity 500 Index Fund', 'quantity': 310.0, 'price': 198.40, 'gain_loss': 24.3},
+            {'symbol': 'FSPSX', 'name': 'Fidelity Intl Index Fund', 'quantity': 180.0, 'price': 48.20, 'gain_loss': -1.5},
+            {'symbol': 'FXNAX', 'name': 'Fidelity US Bond Index Fund', 'quantity': 450.0, 'price': 10.85, 'gain_loss': 2.9},
+            {'symbol': 'FSSNX', 'name': 'Fidelity Small Cap Index Fund', 'quantity': 200.0, 'price': 28.65, 'gain_loss': 8.7},
+            {'symbol': 'FPADX', 'name': 'Fidelity Balanced Fund', 'quantity': 150.0, 'price': 29.10, 'gain_loss': 11.2},
+            {'symbol': 'FSMAX', 'name': 'Fidelity Ext Market Index Fund', 'quantity': 275.0, 'price': 82.50, 'gain_loss': 6.4},
+        ],
+        'E*TRADE Roth IRA': [
+            {'symbol': 'MSFT', 'name': 'Microsoft Corp', 'quantity': 30.0, 'price': 415.80, 'gain_loss': 35.2},
+            {'symbol': 'GOOGL', 'name': 'Alphabet Inc', 'quantity': 45.0, 'price': 175.40, 'gain_loss': 22.8},
+            {'symbol': 'AMZN', 'name': 'Amazon.com Inc', 'quantity': 20.0, 'price': 185.60, 'gain_loss': 28.9},
+            {'symbol': 'VTI', 'name': 'Vanguard Total Stock Market ETF', 'quantity': 15.0, 'price': 248.50, 'gain_loss': 14.1},
+        ],
+        'Schwab Taxable': [
+            {'symbol': 'SCHD', 'name': 'Schwab US Dividend Equity ETF', 'quantity': 100.0, 'price': 78.90, 'gain_loss': 9.3},
+            {'symbol': 'SCHX', 'name': 'Schwab US Large-Cap ETF', 'quantity': 85.0, 'price': 58.20, 'gain_loss': 15.7},
+            {'symbol': 'NVDA', 'name': 'NVIDIA Corp', 'quantity': 12.0, 'price': 485.30, 'gain_loss': 112.5},
+        ],
+    }
+    # Compute value for each holding and scale to match account balance
+    for acct in DEMO_INVESTMENT_ACCOUNTS:
+        acct_name = acct['name']
+        h_list = holdings_map.get(acct_name, [])
+        raw_total = sum(h['quantity'] * h['price'] for h in h_list)
+        scale = acct['balance'] / raw_total if raw_total > 0 else 1
+        for h in h_list:
+            h['value'] = round(h['quantity'] * h['price'] * scale, 2)
+        holdings_map[acct_name] = h_list
+    return holdings_map
+
+DEMO_HOLDINGS = _gen_holdings()
+
 DEMO_DUE_DATES = {
     'Rent / Mortgage': 1, 'Student Loans': 8, 'Car Payment': 15,
     'Credit Card': 22, 'Car Insurance': 28,
@@ -350,6 +403,36 @@ st.markdown("""
     .stTextInput div[data-testid="InputInstructions"] { display: none !important; }
     [data-testid="stToast"] { left: 1rem !important; right: auto !important; background: rgba(30,41,59,0.95) !important; border: 1px solid rgba(52,211,153,0.3) !important; border-radius: 12px !important; backdrop-filter: blur(10px) !important; }
     [data-testid="stToast"] div { color: #e2e8f0 !important; }
+    @keyframes slideDown {
+        from { opacity: 0; max-height: 0; transform: translateY(-10px); }
+        to { opacity: 1; max-height: 2000px; transform: translateY(0); }
+    }
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, rgba(96,165,250,0.2) 0%, rgba(96,165,250,0.1) 100%) !important;
+        border: 1px solid rgba(96,165,250,0.4) !important;
+        color: #60a5fa !important;
+    }
+    .stButton > button[kind="secondary"] {
+        background: rgba(255,255,255,0.03) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        color: #64748b !important;
+    }
+    .stButton > button[kind="secondary"]:hover {
+        background: rgba(255,255,255,0.06) !important;
+        color: #94a3b8 !important;
+    }
+    .holdings-panel {
+        background: linear-gradient(145deg, rgba(30,41,59,0.6) 0%, rgba(15,23,42,0.8) 100%);
+        border-radius: 16px; padding: 20px 24px; margin: 0 0 16px 0;
+        border: 1px solid rgba(96,165,250,0.2);
+        animation: slideDown 0.35s ease-out forwards; overflow: hidden;
+    }
+    .holding-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px;
+    }
+    .holding-detail { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .holding-val { color: #e2e8f0; font-weight: 700; }
     @media (max-width: 768px) { .kpi-value { font-size: 28px; } .kpi-label { font-size: 10px; letter-spacing: 1.5px; } .block-container { padding: 0.5rem; } }
 </style>
 """, unsafe_allow_html=True)
@@ -769,6 +852,158 @@ def get_credit_accounts(accounts):
 
 
 # ========================
+# INVESTMENTS VIEW
+# ========================
+def render_investments_view():
+    """Render the Long-Term Investments view with demo data."""
+    investment_accounts = list(DEMO_INVESTMENT_ACCOUNTS)
+    holdings_by_account = DEMO_HOLDINGS
+    total_investments = sum(a['balance'] for a in investment_accounts)
+
+    # Total Portfolio KPI
+    st.markdown(f"""
+    <div style="background:linear-gradient(145deg, rgba(16,185,129,0.15) 0%, rgba(15,23,42,0.9) 100%);
+                border:1px solid rgba(16,185,129,0.3);border-radius:20px;padding:32px;text-align:center;margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:#10b981;text-transform:uppercase;letter-spacing:2px;">Total Portfolio Value</div>
+        <div style="font-size:48px;font-weight:800;color:#e2e8f0;margin:8px 0;">${total_investments:,.2f}</div>
+        <div style="font-size:13px;color:#64748b;">{len(investment_accounts)} accounts</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="section-header">📈 Investment Accounts</div>', unsafe_allow_html=True)
+
+    investment_accounts.sort(key=lambda a: -a['balance'])
+
+    subtype_labels = {
+        'brokerage': '📊 Brokerage', 'roth': '🏦 Roth IRA',
+        'sep ira': '🏦 SEP IRA', '401k': '🏢 401(k)',
+    }
+
+    if "expanded_acct" not in st.session_state:
+        st.session_state["expanded_acct"] = None
+
+    for i in range(0, len(investment_accounts), 2):
+        cols = st.columns(2)
+        for j, col in enumerate(cols):
+            if i + j >= len(investment_accounts):
+                continue
+            acct = investment_accounts[i + j]
+            subtype_label = subtype_labels.get(acct['subtype'], acct['subtype'].title())
+            acct_holdings = holdings_by_account.get(acct['name'], [])
+            holding_count = len(acct_holdings)
+            acct_bal = acct['balance']
+            is_expanded = st.session_state["expanded_acct"] == acct['name']
+            arrow = "▼" if is_expanded else "▶"
+
+            with col:
+                st.markdown(f"""
+                <div style="background:linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%);
+                            border:1px solid rgba(96,165,250,{'0.3' if is_expanded else '0.15'});border-radius:14px;padding:14px 18px;margin-bottom:4px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <span style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">{subtype_label}</span>
+                            <span style="color:#64748b;margin:0 6px;">·</span>
+                            <span style="font-size:14px;font-weight:700;color:#e2e8f0;">{acct['name']}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="font-size:22px;font-weight:800;color:#60a5fa;">${acct_bal:,.2f}</span>
+                            <span style="font-size:11px;color:#64748b;margin-left:8px;">{holding_count} holdings</span>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if holding_count > 0:
+                    if st.button(f"{arrow} {'Hide' if is_expanded else 'View'} Holdings", key=f"expand_{acct['name']}", use_container_width=True):
+                        if is_expanded:
+                            st.session_state["expanded_acct"] = None
+                        else:
+                            st.session_state["expanded_acct"] = acct['name']
+                        st.rerun()
+
+        # Render holdings below the row for whichever account in this row is expanded
+        for j in range(2):
+            if i + j >= len(investment_accounts):
+                continue
+            acct = investment_accounts[i + j]
+            if st.session_state["expanded_acct"] != acct['name']:
+                continue
+
+            acct_holdings = holdings_by_account.get(acct['name'], [])
+            acct_bal = acct['balance']
+            if not acct_holdings:
+                continue
+
+            sorted_holdings = sorted(acct_holdings, key=lambda h: -h['value'])
+
+            for h in sorted_holdings:
+                gl_num = h['gain_loss']
+                gl_color = '#34d399' if gl_num >= 0 else '#fb7185'
+                gl_display = f"{gl_num:+.2f}%"
+
+                title = f"<span style=\"color:#60a5fa;font-weight:700;\">{h['symbol']}</span> <span style=\"color:#64748b;\">- {h['name'][:45]}</span>"
+
+                val_display = f"${h['value']:,.2f}"
+                pct_of_acct = (h['value'] / acct_bal * 100) if acct_bal > 0 else 0
+                detail = f"{h['quantity']:,.2f} shares @ ${h['price']:,.2f}"
+                pct_display = f"<span style=\"color:{gl_color};font-size:12px;font-weight:600;\">{gl_display}</span> <span style=\"color:#64748b;font-size:11px;\">| {pct_of_acct:.1f}%</span>"
+
+                st.markdown(f'<div class="holding-row"><div style="flex:1;"><div>{title}</div><div class="holding-detail">{detail}</div></div><div style="text-align:right;"><div class="holding-val">{val_display}</div>{pct_display}</div></div>', unsafe_allow_html=True)
+
+    # Allocation donut chart
+    st.markdown('<div class="section-header">🎯 Allocation</div>', unsafe_allow_html=True)
+
+    by_type = {}
+    for acct in investment_accounts:
+        if acct['subtype'] == 'brokerage':
+            group = 'Brokerage'
+        elif acct['subtype'] in ('roth', 'sep ira'):
+            group = 'Retirement (IRA)'
+        elif acct['subtype'] == '401k':
+            group = 'Retirement (401k)'
+        else:
+            group = 'Other'
+        by_type[group] = by_type.get(group, 0) + acct['balance']
+
+    color_map = {'Brokerage': '#60a5fa', 'Retirement (IRA)': '#34d399', 'Retirement (401k)': '#a78bfa', 'Other': '#fbbf24'}
+    chart_colors = [color_map.get(k, '#64748b') for k in by_type.keys()]
+
+    fig = go.Figure(data=[go.Pie(
+        labels=list(by_type.keys()),
+        values=list(by_type.values()),
+        hole=0.6,
+        marker=dict(
+            colors=chart_colors,
+            line=dict(color='rgba(10,14,26,0.8)', width=3)
+        ),
+        textinfo='percent',
+        textfont=dict(size=12, color='#e2e8f0', family='Inter'),
+        hovertemplate='<b>%{label}</b><br>$%{value:,.2f}<br>%{percent}<extra></extra>',
+        pull=[0.015] * len(by_type),
+        direction='clockwise',
+        sort=True,
+    )])
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#e2e8f0', family='Inter'),
+        height=380,
+        margin=dict(l=10, r=10, t=10, b=10),
+        legend=dict(
+            font=dict(size=11, color='#94a3b8', family='Inter'),
+            bgcolor='rgba(0,0,0,0)',
+            orientation='v',
+            yanchor='middle',
+            y=0.5,
+            itemclick=False,
+            itemdoubleclick=False,
+        ),
+        showlegend=True,
+    )
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+
+# ========================
 # MAIN DASHBOARD
 # ========================
 def main():
@@ -812,7 +1047,38 @@ def main():
         from calendar import month_name
         subtitle_text = f"{month_name[mo]} {y} &nbsp;•&nbsp; {source_label}"
     st.markdown(f'<div class="dashboard-subtitle">{subtitle_text}</div>', unsafe_allow_html=True)
-    
+
+    # ========================
+    # VIEW TOGGLE (pill style)
+    # ========================
+    if "view_mode" not in st.session_state:
+        st.session_state["view_mode"] = "daily"
+
+    toggle_col1, tc_daily, tc_invest, toggle_col4 = st.columns([2, 1, 1, 2])
+    with tc_daily:
+        if st.button(
+            "💵 Daily Finances",
+            key="btn_daily",
+            use_container_width=True,
+            type="primary" if st.session_state["view_mode"] == "daily" else "secondary"
+        ):
+            st.session_state["view_mode"] = "daily"
+            st.rerun()
+    with tc_invest:
+        if st.button(
+            "📈 Investments",
+            key="btn_invest",
+            use_container_width=True,
+            type="primary" if st.session_state["view_mode"] == "investments" else "secondary"
+        ):
+            st.session_state["view_mode"] = "investments"
+            st.rerun()
+
+    if st.session_state["view_mode"] == "investments":
+        render_investments_view()
+        st.markdown('<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly</div>', unsafe_allow_html=True)
+        return
+
     monthly_tx, monthly_total = get_filtered_spending(transactions, selected_period) if transactions is not None and not transactions.empty else (pd.DataFrame(), 0)
     
     months_elapsed = now.month if is_ytd else 1
