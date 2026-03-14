@@ -1618,7 +1618,7 @@ def run_production(config):
 
     if st.session_state["view_mode"] == "investments":
         render_production_investments_view(data, manual)
-        st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">{family_name.upper()} &nbsp;•&nbsp; Data synced via Finta &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#475569;font-size:11px;letter-spacing:1px;">{family_name.upper()} &nbsp;•&nbsp; Data synced via Finta &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
         return
 
     # Period selector
@@ -1870,7 +1870,7 @@ def run_production(config):
         st.markdown('<p style="color:#64748b;text-align:center;">No transactions this month yet.</p>', unsafe_allow_html=True)
 
     # === FOOTER ===
-    st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">{family_name.upper()} &nbsp;•&nbsp; Data synced via Finta &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#475569;font-size:11px;letter-spacing:1px;">{family_name.upper()} &nbsp;•&nbsp; Data synced via Finta &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
 
 
 # ========================
@@ -1933,7 +1933,7 @@ def main():
 
     if st.session_state["view_mode"] == "investments":
         render_investments_view()
-        st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#475569;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
         return
 
     # Date selector (daily finances only)
@@ -2138,7 +2138,7 @@ def main():
                 st.rerun()
     
     # === FOOTER ===
-    st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#1e293b;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#475569;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
     
 
 
