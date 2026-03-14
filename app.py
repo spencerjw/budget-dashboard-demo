@@ -1252,17 +1252,45 @@ def main():
         st.markdown('<div class="section-header">📅 Upcoming Due Dates</div>', unsafe_allow_html=True)
         today = datetime.now().day
         dues_sorted = sorted(DUE_DATES.items(), key=lambda x: x[1] if isinstance(x[1], int) else x[1][0])
-        col1, col2 = st.columns(2)
-        mid = len(dues_sorted) // 2
-        for i, (name, val) in enumerate(dues_sorted):
+        
+        upcoming = []
+        rest = []
+        for name, val in dues_sorted:
             day, amount = (val, 0) if isinstance(val, int) else val
-            col = col1 if i <= mid else col2
-            if day < today: status, color = "✅ Paid", "#34d399"
-            elif day - today <= 5: status, color = "⚡ Due Soon", "#fbbf24"
-            else: status, color = f"In {day - today} days", "#475569"
-            amount_html = f'<span style="color:#e2e8f0;font-weight:600;font-size:13px;margin-left:8px;">${amount:,.0f}</span>' if amount > 0 else ''
-            with col:
-                st.markdown(f'<div class="due-row"><span class="due-name">{name}{amount_html}</span><span class="due-date" style="color:{color}">{day}th — {status}</span></div>', unsafe_allow_html=True)
+            days_away = day - today if day >= today else day + 31 - today
+            if day < today:
+                rest.append((name, day, amount, "✅ Paid", "#34d399"))
+            elif days_away <= 14:
+                if day - today <= 5:
+                    upcoming.append((name, day, amount, "⚡ Due Soon", "#fbbf24"))
+                else:
+                    upcoming.append((name, day, amount, f"In {day - today} days", "#475569"))
+            else:
+                rest.append((name, day, amount, f"In {day - today} days", "#475569"))
+        
+        def render_due_rows(items):
+            c1, c2 = st.columns(2)
+            mid = len(items) // 2
+            for i, (n, d, a, s, clr) in enumerate(items):
+                col = c1 if i <= mid else c2
+                amt_html = f'<span style="color:#e2e8f0;font-weight:600;font-size:13px;margin-left:8px;">${a:,.0f}</span>' if a > 0 else ''
+                with col:
+                    st.markdown(f'<div class="due-row"><span class="due-name">{n}{amt_html}</span><span class="due-date" style="color:{clr}">{d}th — {s}</span></div>', unsafe_allow_html=True)
+        
+        render_due_rows(upcoming)
+        
+        if rest:
+            if "show_all_dues" not in st.session_state:
+                st.session_state["show_all_dues"] = False
+            if st.session_state["show_all_dues"]:
+                render_due_rows(rest)
+                if st.button("Show Less", key="due_less"):
+                    st.session_state["show_all_dues"] = False
+                    st.rerun()
+            else:
+                if st.button(f"Show {len(rest)} More", key="due_more"):
+                    st.session_state["show_all_dues"] = True
+                    st.rerun()
     
     # === RECENT TRANSACTIONS ===
     if not monthly_tx.empty:
