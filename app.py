@@ -1011,6 +1011,35 @@ def render_investments_view():
     )
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
+    # ========================
+    # BALANCE HISTORY SNAPSHOT
+    # ========================
+    st.markdown('<div class="section-header">📋 Balance History Snapshot</div>', unsafe_allow_html=True)
+
+    random.seed(42)
+    history_data = [
+        ("Vanguard Brokerage", 45200, 47850),
+        ("Fidelity 401(k)", 182400, 189750),
+        ("E*TRADE Roth IRA", 31800, 34200),
+        ("Schwab Taxable", 22100, 23650),
+    ]
+
+    for acct_name, prev_bal, current_bal in history_data:
+        change = current_bal - prev_bal
+        change_pct = (change / prev_bal * 100) if prev_bal > 0 else 0
+        arrow = "↑" if change >= 0 else "↓"
+        change_color = "#34d399" if change >= 0 else "#fb7185"
+
+        st.markdown(f"""
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;
+                    border-bottom:1px solid rgba(255,255,255,0.04);font-size:14px;">
+            <span style="color:#cbd5e1;">{acct_name}</span>
+            <span style="color:{change_color};font-weight:600;">
+                {arrow} ${abs(change):,.2f} ({change_pct:+.1f}%)
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+
 
 # ========================
 # MAIN DASHBOARD
