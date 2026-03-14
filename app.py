@@ -1833,7 +1833,7 @@ def run_production(config):
             if "show_all_dues" not in st.session_state:
                 st.session_state["show_all_dues"] = False
             if st.session_state["show_all_dues"]:
-                render_due_rows(rest)
+                render_due_rows(sorted(rest, key=lambda x: (x[3].startswith('✅'), x[1])))
                 if st.button("Show Less", key="due_less"):
                     st.session_state["show_all_dues"] = False
                     st.rerun()
@@ -2104,7 +2104,7 @@ def main():
             if "show_all_dues" not in st.session_state:
                 st.session_state["show_all_dues"] = False
             if st.session_state["show_all_dues"]:
-                render_due_rows(rest)
+                render_due_rows(sorted(rest, key=lambda x: (x[3].startswith('✅'), x[1])))
                 if st.button("Show Less", key="due_less"):
                     st.session_state["show_all_dues"] = False
                     st.rerun()
