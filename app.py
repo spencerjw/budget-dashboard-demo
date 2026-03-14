@@ -712,17 +712,22 @@ if st.session_state.get("view_mode") != "investments":
                 new_day = st.number_input("Day", value=day, min_value=1, max_value=31, key=f"due_{bill_name}", label_visibility="collapsed")
             with c3:
                 del_due = st.button("🗑️", key=f"due_del_{bill_name}")
-            if not del_due:
+            if del_due:
+                cfg['due_dates'] = {k: v for k, v in cfg['due_dates'].items() if k != bill_name}
+                st.rerun()
+            else:
                 updated_dues[bill_name] = new_day
         
-        st.caption("Add a due date:")
-        nc1, nc2 = st.columns([3, 1])
+        st.caption("Add a new bill due date:")
+        nc1, nc2, nc3 = st.columns([3, 1, 1])
         with nc1:
             new_due_name = st.text_input("Bill name", key="new_due_name", placeholder="e.g. Rent", label_visibility="collapsed")
         with nc2:
             new_due_day = st.number_input("Day", value=1, min_value=1, max_value=31, key="new_due_day", label_visibility="collapsed")
+        with nc3:
+            add_due = st.button("➕", key="add_due_btn")
         
-        if new_due_name.strip():
+        if add_due and new_due_name.strip():
             updated_dues[new_due_name.strip()] = new_due_day
         
         cfg['due_dates'] = updated_dues
