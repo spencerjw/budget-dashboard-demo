@@ -449,6 +449,13 @@ init_session_config(localS)
 # SIDEBAR
 # ========================
 with st.sidebar:
+    if st.session_state.get("view_mode") == "investments":
+        st.markdown("### 📈 Investments View")
+        st.info("The investments view is not customizable in this demo. Switch back to **💵 Daily Finances** to configure your budget.")
+        st.caption("Investment accounts, holdings, and allocation shown here use sample data to demonstrate the feature.")
+
+if st.session_state.get("view_mode") != "investments":
+ with st.sidebar:
     # === STATUS MESSAGES ===
     if st.session_state.get('reset_success'):
         st.session_state['reset_success'] = False
