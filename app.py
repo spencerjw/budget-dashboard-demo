@@ -120,8 +120,8 @@ def _gen_holdings():
 DEMO_HOLDINGS = _gen_holdings()
 
 DEMO_DUE_DATES = {
-    'Rent / Mortgage': 1, 'Student Loans': 8, 'Car Payment': 15,
-    'Credit Card': 22, 'Car Insurance': 28,
+    'Rent / Mortgage': (1, 2200), 'Student Loans': (8, 485), 'Car Payment': (15, 520),
+    'Credit Card': (22, 0), 'Car Insurance': (28, 165),
 }
 
 
@@ -704,31 +704,36 @@ if st.session_state.get("view_mode") != "investments":
         st.caption("Add bills that aren't credit cards or loans (those due dates are set above). Enter the day of the month each is due -- e.g. rent on the 1st, electric on the 15th. Shows up in the Upcoming Bills section of your dashboard.")
         
         updated_dues = {}
-        for bill_name, day in list(cfg['due_dates'].items()):
-            c1, c2, c3 = st.columns([3, 1, 1])
+        for bill_name, val in list(cfg['due_dates'].items()):
+            day, amount = (val, 0) if isinstance(val, int) else val
+            c1, c2, c3, c4 = st.columns([3, 1.5, 1, 0.5])
             with c1:
                 st.markdown(f"<span style='color:#94a3b8;font-size:13px;'>{bill_name}</span>", unsafe_allow_html=True)
             with c2:
-                new_day = st.number_input("Day", value=day, min_value=1, max_value=31, key=f"due_{bill_name}", label_visibility="collapsed")
+                new_amt = st.number_input("$", value=amount, step=5, min_value=0, key=f"due_amt_{bill_name}", label_visibility="collapsed")
             with c3:
+                new_day = st.number_input("Day", value=day, min_value=1, max_value=31, key=f"due_{bill_name}", label_visibility="collapsed")
+            with c4:
                 del_due = st.button("🗑️", key=f"due_del_{bill_name}")
             if del_due:
                 cfg['due_dates'] = {k: v for k, v in cfg['due_dates'].items() if k != bill_name}
                 st.rerun()
             else:
-                updated_dues[bill_name] = new_day
+                updated_dues[bill_name] = (new_day, new_amt)
         
         st.caption("Add a new bill due date:")
-        nc1, nc2, nc3 = st.columns([3, 1, 1])
+        nc1, nc2, nc3, nc4 = st.columns([3, 1.5, 1, 0.5])
         with nc1:
             new_due_name = st.text_input("Bill name", key="new_due_name", placeholder="e.g. Rent", label_visibility="collapsed")
         with nc2:
-            new_due_day = st.number_input("Day", value=1, min_value=1, max_value=31, key="new_due_day", label_visibility="collapsed")
+            new_due_amt = st.number_input("$", value=0, step=5, min_value=0, key="new_due_amt", label_visibility="collapsed")
         with nc3:
+            new_due_day = st.number_input("Day", value=1, min_value=1, max_value=31, key="new_due_day", label_visibility="collapsed")
+        with nc4:
             add_due = st.button("➕", key="add_due_btn")
         
         if add_due and new_due_name.strip():
-            updated_dues[new_due_name.strip()] = new_due_day
+            updated_dues[new_due_name.strip()] = (new_due_day, new_due_amt)
         
         cfg['due_dates'] = updated_dues
         
@@ -1248,16 +1253,18 @@ def main():
     if DUE_DATES:
         st.markdown('<div class="section-header">📅 Upcoming Due Dates</div>', unsafe_allow_html=True)
         today = datetime.now().day
-        dues_sorted = sorted(DUE_DATES.items(), key=lambda x: x[1])
+        dues_sorted = sorted(DUE_DATES.items(), key=lambda x: x[1] if isinstance(x[1], int) else x[1][0])
         col1, col2 = st.columns(2)
         mid = len(dues_sorted) // 2
-        for i, (name, day) in enumerate(dues_sorted):
+        for i, (name, val) in enumerate(dues_sorted):
+            day, amount = (val, 0) if isinstance(val, int) else val
             col = col1 if i <= mid else col2
             if day < today: status, color = "✅ Paid", "#34d399"
             elif day - today <= 5: status, color = "⚡ Due Soon", "#fbbf24"
             else: status, color = f"In {day - today} days", "#475569"
+            amount_html = f'<span style="color:#e2e8f0;font-weight:600;font-size:13px;margin-left:8px;">${amount:,.0f}</span>' if amount > 0 else ''
             with col:
-                st.markdown(f'<div class="due-row"><span class="due-name">{name}</span><span class="due-date" style="color:{color}">{day}th — {status}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="due-row"><span class="due-name">{name}{amount_html}</span><span class="due-date" style="color:{color}">{day}th — {status}</span></div>', unsafe_allow_html=True)
     
     # === RECENT TRANSACTIONS ===
     if not monthly_tx.empty:
