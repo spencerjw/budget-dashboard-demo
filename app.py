@@ -1803,20 +1803,22 @@ def run_production(config):
         today = datetime.now().day
         dues_sorted = sorted(DUE_DATES.items(), key=lambda x: x[1] if isinstance(x[1], int) else x[1][0])
 
-        upcoming = []
-        rest = []
+        all_dues = []
         for name, val in dues_sorted:
             day, amount = (val, 0) if isinstance(val, int) else val
-            days_away = day - today if day >= today else day + 31 - today
             if day < today:
-                rest.append((name, day, amount, "✅ Paid", "#34d399"))
-            elif days_away <= 14:
-                if day - today <= 5:
-                    upcoming.append((name, day, amount, "⚡ Due Soon", "#fbbf24"))
-                else:
-                    upcoming.append((name, day, amount, f"In {day - today} days", "#64748b"))
+                all_dues.append((name, day, amount, "✅ Paid", "#34d399"))
+            elif day - today <= 5:
+                all_dues.append((name, day, amount, "⚡ Due Soon", "#fbbf24"))
             else:
-                rest.append((name, day, amount, f"In {day - today} days", "#64748b"))
+                all_dues.append((name, day, amount, f"In {day - today} days", "#64748b"))
+
+        # Sort: unpaid first by day, then paid at bottom
+        all_dues.sort(key=lambda x: (x[3].startswith('✅'), x[1]))
+
+        INITIAL_SHOW = 12
+        first_batch = all_dues[:INITIAL_SHOW]
+        overflow = all_dues[INITIAL_SHOW:]
 
         def render_due_rows(items):
             c1, c2 = st.columns(2)
@@ -1827,18 +1829,18 @@ def run_production(config):
                 with col:
                     st.markdown(f'<div class="due-row"><span class="due-name" style="flex:1;">{n}</span>{amt_html}<span class="due-date" style="color:{clr};min-width:120px;text-align:right;">{d}th — {s}</span></div>', unsafe_allow_html=True)
 
-        render_due_rows(upcoming)
+        render_due_rows(first_batch)
 
-        if rest:
+        if overflow:
             if "show_all_dues" not in st.session_state:
                 st.session_state["show_all_dues"] = False
             if st.session_state["show_all_dues"]:
-                render_due_rows(sorted(rest, key=lambda x: (x[3].startswith('✅'), x[1])))
+                render_due_rows(overflow)
                 if st.button("Show Less", key="due_less"):
                     st.session_state["show_all_dues"] = False
                     st.rerun()
             else:
-                if st.button(f"Show {len(rest)} More", key="due_more"):
+                if st.button(f"Show {len(overflow)} More", key="due_more"):
                     st.session_state["show_all_dues"] = True
                     st.rerun()
 
@@ -2074,20 +2076,21 @@ def main():
         today = datetime.now().day
         dues_sorted = sorted(DUE_DATES.items(), key=lambda x: x[1] if isinstance(x[1], int) else x[1][0])
         
-        upcoming = []
-        rest = []
+        all_dues = []
         for name, val in dues_sorted:
             day, amount = (val, 0) if isinstance(val, int) else val
-            days_away = day - today if day >= today else day + 31 - today
             if day < today:
-                rest.append((name, day, amount, "✅ Paid", "#34d399"))
-            elif days_away <= 14:
-                if day - today <= 5:
-                    upcoming.append((name, day, amount, "⚡ Due Soon", "#fbbf24"))
-                else:
-                    upcoming.append((name, day, amount, f"In {day - today} days", "#475569"))
+                all_dues.append((name, day, amount, "✅ Paid", "#34d399"))
+            elif day - today <= 5:
+                all_dues.append((name, day, amount, "⚡ Due Soon", "#fbbf24"))
             else:
-                rest.append((name, day, amount, f"In {day - today} days", "#475569"))
+                all_dues.append((name, day, amount, f"In {day - today} days", "#475569"))
+        
+        all_dues.sort(key=lambda x: (x[3].startswith('✅'), x[1]))
+        
+        INITIAL_SHOW = 12
+        first_batch = all_dues[:INITIAL_SHOW]
+        overflow = all_dues[INITIAL_SHOW:]
         
         def render_due_rows(items):
             c1, c2 = st.columns(2)
@@ -2098,18 +2101,18 @@ def main():
                 with col:
                     st.markdown(f'<div class="due-row"><span class="due-name" style="flex:1;">{n}</span>{amt_html}<span class="due-date" style="color:{clr};min-width:120px;text-align:right;">{d}th — {s}</span></div>', unsafe_allow_html=True)
         
-        render_due_rows(upcoming)
+        render_due_rows(first_batch)
         
-        if rest:
+        if overflow:
             if "show_all_dues" not in st.session_state:
                 st.session_state["show_all_dues"] = False
             if st.session_state["show_all_dues"]:
-                render_due_rows(sorted(rest, key=lambda x: (x[3].startswith('✅'), x[1])))
+                render_due_rows(overflow)
                 if st.button("Show Less", key="due_less"):
                     st.session_state["show_all_dues"] = False
                     st.rerun()
             else:
-                if st.button(f"Show {len(rest)} More", key="due_more"):
+                if st.button(f"Show {len(overflow)} More", key="due_more"):
                     st.session_state["show_all_dues"] = True
                     st.rerun()
     
