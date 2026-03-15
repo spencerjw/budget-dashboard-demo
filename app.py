@@ -1822,9 +1822,9 @@ def run_production(config):
 
         def render_due_rows(items):
             c1, c2 = st.columns(2)
-            mid = len(items) // 2
+            mid = (len(items) + 1) // 2
             for i, (n, d, a, s, clr) in enumerate(items):
-                col = c1 if i <= mid else c2
+                col = c1 if i < mid else c2
                 amt_html = f'<span style="color:#e2e8f0;font-weight:600;font-size:13px;min-width:70px;text-align:right;display:inline-block;margin-right:16px;">${a:,.0f}</span>' if a > 0 else '<span style="min-width:70px;display:inline-block;margin-right:16px;"></span>'
                 with col:
                     st.markdown(f'<div class="due-row"><span class="due-name" style="flex:1;">{n}</span>{amt_html}<span class="due-date" style="color:{clr};min-width:120px;text-align:right;">{d}th — {s}</span></div>', unsafe_allow_html=True)
@@ -2094,9 +2094,9 @@ def main():
         
         def render_due_rows(items):
             c1, c2 = st.columns(2)
-            mid = len(items) // 2
+            mid = (len(items) + 1) // 2
             for i, (n, d, a, s, clr) in enumerate(items):
-                col = c1 if i <= mid else c2
+                col = c1 if i < mid else c2
                 amt_html = f'<span style="color:#e2e8f0;font-weight:600;font-size:13px;min-width:70px;text-align:right;display:inline-block;margin-right:16px;">${a:,.0f}</span>' if a > 0 else '<span style="min-width:70px;display:inline-block;margin-right:16px;"></span>'
                 with col:
                     st.markdown(f'<div class="due-row"><span class="due-name" style="flex:1;">{n}</span>{amt_html}<span class="due-date" style="color:{clr};min-width:120px;text-align:right;">{d}th — {s}</span></div>', unsafe_allow_html=True)
