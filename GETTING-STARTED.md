@@ -2,7 +2,7 @@
 
 ## Demo Mode (No Setup)
 
-1. Open the [live demo](https://budget-dashboard-demo-ltc4jkyc8bajang468zh7v.streamlit.app/)
+1. Open the [live demo](https://budget-dashboard-demo-8nj84cznyyk33y7pacr4ug.streamlit.app/)
 2. You'll see sample data for a fictional family (the "Anderson Family Budget")
 3. Use the sidebar to switch between **Demo Test Data** and **Try with My Data**
 4. In "Try with My Data" mode, enter your own income, bills, and accounts
