@@ -62,6 +62,12 @@ due_dates:
   Credit Card: [17, 0]
 
 # ========================
+# Grocery Price Tracker (optional)
+# ========================
+# Google Sheet ID for grocery order/item data
+# grocery_sheet_id: "your-grocery-google-sheet-id"
+
+# ========================
 # 401(k) Fund Ticker Mappings (optional)
 # ========================
 # If your 401(k) is connected via Plaid/Finta, Plaid often doesn't

@@ -1354,8 +1354,21 @@ def render_production_investments_view(data, manual):
     </div>
     """, unsafe_allow_html=True)
 
+    # Determine latest data date from balance history or accounts
+    _inv_data_date = None
+    if not balance_history.empty:
+        for dc in ['Date', 'date', 'As Of Date', 'Timestamp']:
+            if dc in balance_history.columns:
+                _parsed = pd.to_datetime(balance_history[dc], format='mixed', errors='coerce').dropna()
+                if not _parsed.empty:
+                    _inv_data_date = _parsed.max()
+                    break
+
     # Account cards
-    st.markdown('<div class="section-header">📈 Investment Accounts</div>', unsafe_allow_html=True)
+    _acct_header = '📈 Investment Accounts'
+    if _inv_data_date is not None:
+        _acct_header += f' <span style="font-size:12px;color:#64748b;font-weight:400;margin-left:8px;">Data as of {_inv_data_date.strftime("%b %d, %Y")}</span>'
+    st.markdown(f'<div class="section-header">{_acct_header}</div>', unsafe_allow_html=True)
 
     investment_accounts.sort(key=lambda a: -a['balance'])
 
@@ -1543,7 +1556,14 @@ def render_production_investments_view(data, manual):
         inv_history = balance_history[balance_history['Account Type'] == 'investment'].copy()
         if not inv_history.empty and 'Balance' in inv_history.columns:
             inv_history['bal'] = inv_history['Balance'].apply(parse_finta_amount)
-            st.markdown('<div class="section-header">📋 Balance History Snapshot</div>', unsafe_allow_html=True)
+            _snap_date_str = ''
+            for dc in ['Date', 'date', 'As Of Date', 'Timestamp']:
+                if dc in inv_history.columns:
+                    _snap_dates = pd.to_datetime(inv_history[dc], format='mixed', errors='coerce').dropna()
+                    if not _snap_dates.empty:
+                        _snap_date_str = f' <span style="font-size:12px;color:#64748b;font-weight:400;margin-left:8px;">Last updated {_snap_dates.max().strftime("%b %d, %Y")}</span>'
+                    break
+            st.markdown(f'<div class="section-header">📋 Balance History Snapshot{_snap_date_str}</div>', unsafe_allow_html=True)
             by_acct = inv_history.groupby('Account')['bal'].last().sort_values(ascending=False)
             for acct_name, bal in by_acct.items():
                 current = next((a['balance'] for a in investment_accounts if a['name'] == acct_name), bal)
@@ -1571,6 +1591,361 @@ def render_production_investments_view(data, manual):
             ✏️ Manual accounts ({names}) - update balances in the "Manual Accounts" tab of your Finta Google Sheet
         </div>
         """, unsafe_allow_html=True)
+
+
+# ========================
+# GROCERY PRICE TRACKER
+# ========================
+
+def load_grocery_data():
+    """Load grocery data from Google Sheet (Items + Orders tabs)."""
+    try:
+        creds = get_credentials()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet_id = _APP_CONFIG.get('grocery_sheet_id', '')
+        if not sheet_id:
+            return None
+
+        data = {}
+        for tab, rng in [('Items', 'A1:O5000'), ('Orders', 'A1:G100')]:
+            for attempt in range(3):
+                try:
+                    result = service.spreadsheets().values().get(
+                        spreadsheetId=sheet_id, range=f"'{tab}'!{rng}"
+                    ).execute()
+                    break
+                except Exception as api_err:
+                    if attempt < 2 and ('503' in str(api_err) or '429' in str(api_err) or 'unavailable' in str(api_err).lower()):
+                        time.sleep(2 ** attempt)
+                        continue
+                    raise
+            values = result.get('values', [])
+            if len(values) > 1:
+                header = values[0]
+                rows = [r for r in values[1:] if r and r[0] != '---']
+                rows = [r + [''] * (len(header) - len(r)) for r in rows]
+                data[tab] = pd.DataFrame(rows, columns=header)
+            else:
+                data[tab] = pd.DataFrame()
+        return data
+    except Exception as e:
+        st.error(f"Could not load grocery data: {e}")
+        return None
+
+
+def load_demo_grocery_data():
+    """Load grocery demo data from sample_grocery_data.json."""
+    json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sample_grocery_data.json')
+    if not os.path.exists(json_path):
+        return None
+    with open(json_path) as f:
+        raw = json.load(f)
+    items_df = pd.DataFrame(raw['items'])
+    orders_df = pd.DataFrame(raw['orders'])
+    return {'Items': items_df, 'Orders': orders_df}
+
+
+def render_groceries_view(grocery_data, is_demo=False):
+    """Render the Grocery Price Tracker page."""
+    items_df = grocery_data.get('Items', pd.DataFrame()).copy()
+    orders_df = grocery_data.get('Orders', pd.DataFrame()).copy()
+
+    if items_df.empty and orders_df.empty:
+        st.info("No grocery data available.")
+        return
+
+    # Parse numeric columns
+    for col in ['line_total', 'unit_price', 'qty']:
+        if col in items_df.columns:
+            items_df[col] = pd.to_numeric(items_df[col], errors='coerce').fillna(0)
+    for col in ['subtotal', 'savings', 'tax', 'total', 'item_count']:
+        if col in orders_df.columns:
+            orders_df[col] = pd.to_numeric(orders_df[col], errors='coerce').fillna(0)
+    if 'order_date' in items_df.columns:
+        items_df['order_date'] = pd.to_datetime(items_df['order_date'], errors='coerce')
+    if 'order_date' in orders_df.columns:
+        orders_df['order_date'] = pd.to_datetime(orders_df['order_date'], errors='coerce')
+        orders_df = orders_df.sort_values('order_date')
+
+    # KPI cards
+    total_spent = orders_df['total'].sum() if 'total' in orders_df.columns else 0
+    total_savings = orders_df['savings'].sum() if 'savings' in orders_df.columns else 0
+    avg_order = orders_df['total'].mean() if 'total' in orders_df.columns and len(orders_df) > 0 else 0
+    num_orders = len(orders_df)
+
+    st.markdown('<div class="section-header">🛒 Grocery Overview</div>', unsafe_allow_html=True)
+    k1, k2, k3, k4 = st.columns(4)
+    with k1:
+        render_kpi("Total Spent", total_spent, "blue")
+    with k2:
+        render_kpi("Total Savings", total_savings, "green")
+    with k3:
+        render_kpi("Avg Order", avg_order, "yellow")
+    with k4:
+        render_kpi("Orders", num_orders, "teal", prefix="")
+
+    # ── 1. Weekly Spend Trend ──
+    if not orders_df.empty and 'order_date' in orders_df.columns:
+        st.markdown('<div class="section-header">📈 Weekly Spend Trend</div>', unsafe_allow_html=True)
+        fig_trend = go.Figure()
+        fig_trend.add_trace(go.Scatter(
+            x=orders_df['order_date'], y=orders_df['total'],
+            mode='lines+markers', name='Order Total',
+            line=dict(color='#60a5fa', width=3), marker=dict(size=8, color='#60a5fa'),
+            hovertemplate='<b>%{x|%b %d}</b><br>Total: $%{y:,.2f}<extra></extra>'
+        ))
+        if 'savings' in orders_df.columns:
+            fig_trend.add_trace(go.Bar(
+                x=orders_df['order_date'], y=orders_df['savings'],
+                name='Savings', marker_color='rgba(52,211,153,0.5)',
+                hovertemplate='<b>%{x|%b %d}</b><br>Saved: $%{y:,.2f}<extra></extra>'
+            ))
+        fig_trend.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#e2e8f0', family='Inter'), height=350,
+            margin=dict(l=40, r=20, t=20, b=40),
+            xaxis=dict(gridcolor='rgba(71,85,105,0.3)', tickformat='%b %d'),
+            yaxis=dict(gridcolor='rgba(71,85,105,0.3)', tickprefix='$'),
+            legend=dict(font=dict(size=11, color='#94a3b8'), bgcolor='rgba(0,0,0,0)',
+                        orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+            barmode='overlay'
+        )
+        st.plotly_chart(fig_trend, use_container_width=True)
+
+    # ── 2. Category Breakdown (stacked bar by week) ──
+    if not items_df.empty and 'category' in items_df.columns and 'order_date' in items_df.columns:
+        st.markdown('<div class="section-header">📊 Category Breakdown by Week</div>', unsafe_allow_html=True)
+        items_df['week'] = items_df['order_date'].dt.to_period('W').apply(lambda r: r.start_time)
+        cat_weekly = items_df.groupby(['week', 'category'])['line_total'].sum().reset_index()
+        cat_colors = {
+            'Produce': '#34d399', 'Meat': '#fb7185', 'Dairy': '#60a5fa',
+            'Frozen': '#818cf8', 'Snacks': '#fbbf24', 'Beverages': '#2dd4bf',
+            'Pantry': '#fb923c', 'Household': '#a78bfa', 'Health/Beauty': '#e879f9',
+        }
+        fig_cat = go.Figure()
+        for cat in cat_weekly['category'].unique():
+            cat_data = cat_weekly[cat_weekly['category'] == cat]
+            fig_cat.add_trace(go.Bar(
+                x=cat_data['week'], y=cat_data['line_total'], name=cat,
+                marker_color=cat_colors.get(cat, '#94a3b8'),
+                hovertemplate=f'<b>{cat}</b><br>' + '%{x|%b %d}: $%{y:,.2f}<extra></extra>'
+            ))
+        fig_cat.update_layout(
+            barmode='stack', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#e2e8f0', family='Inter'), height=380,
+            margin=dict(l=40, r=20, t=20, b=40),
+            xaxis=dict(gridcolor='rgba(71,85,105,0.3)', tickformat='%b %d'),
+            yaxis=dict(gridcolor='rgba(71,85,105,0.3)', tickprefix='$'),
+            legend=dict(font=dict(size=11, color='#94a3b8'), bgcolor='rgba(0,0,0,0)',
+                        orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+        )
+        st.plotly_chart(fig_cat, use_container_width=True)
+
+    # ── 3. Repeat Item Tracker (top 25 most purchased) ──
+    if not items_df.empty and 'item_normalized' in items_df.columns:
+        st.markdown('<div class="section-header">🔁 Repeat Item Tracker</div>', unsafe_allow_html=True)
+        item_stats = items_df.groupby('item_normalized').agg(
+            buy_count=('order_date', 'count'),
+            avg_price=('unit_price', 'mean'),
+            last_price=('unit_price', 'last'),
+            total_spent=('line_total', 'sum'),
+        ).reset_index()
+        item_stats = item_stats[item_stats['buy_count'] >= 2].sort_values('buy_count', ascending=False).head(25)
+
+        if not item_stats.empty:
+            item_stats['pct_diff'] = ((item_stats['last_price'] - item_stats['avg_price']) / item_stats['avg_price'] * 100).round(1)
+
+            table_html = '<table class="tx-table"><thead><tr><th>Item</th><th>Purchases</th><th>Avg Price</th><th>Last Price</th><th>Trend</th><th>Total</th></tr></thead><tbody>'
+            for _, row in item_stats.iterrows():
+                diff = row['pct_diff']
+                if abs(diff) > 10:
+                    trend_color = '#fb7185' if diff > 0 else '#34d399'
+                    trend_icon = '▲' if diff > 0 else '▼'
+                    trend = f'<span style="color:{trend_color};font-weight:700;">{trend_icon} {abs(diff):.0f}%</span>'
+                elif abs(diff) > 0:
+                    trend = f'<span style="color:#64748b;">{diff:+.0f}%</span>'
+                else:
+                    trend = '<span style="color:#64748b;">—</span>'
+                table_html += f'<tr><td style="font-weight:600;">{row["item_normalized"]}</td><td>{int(row["buy_count"])}x</td><td>${row["avg_price"]:.2f}</td><td>${row["last_price"]:.2f}</td><td>{trend}</td><td style="color:#60a5fa;font-weight:600;">${row["total_spent"]:.2f}</td></tr>'
+            table_html += '</tbody></table>'
+            st.markdown(table_html, unsafe_allow_html=True)
+
+            # Mini price-history sparklines for top 8 items
+            top_items = item_stats.head(8)['item_normalized'].tolist()
+            st.markdown('<div style="margin-top:24px;"></div>', unsafe_allow_html=True)
+            cols = st.columns(4)
+            for idx, item_name in enumerate(top_items):
+                item_hist = items_df[items_df['item_normalized'] == item_name].sort_values('order_date')
+                if len(item_hist) < 2:
+                    continue
+                fig_spark = go.Figure()
+                fig_spark.add_trace(go.Scatter(
+                    x=item_hist['order_date'], y=item_hist['unit_price'],
+                    mode='lines+markers', line=dict(color='#60a5fa', width=2),
+                    marker=dict(size=5), hovertemplate='%{x|%b %d}: $%{y:.2f}<extra></extra>'
+                ))
+                fig_spark.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                    height=100, margin=dict(l=5, r=5, t=22, b=5), showlegend=False,
+                    title=dict(text=item_name, font=dict(size=11, color='#94a3b8'), x=0.5),
+                    xaxis=dict(visible=False), yaxis=dict(visible=False),
+                )
+                with cols[idx % 4]:
+                    st.plotly_chart(fig_spark, use_container_width=True)
+
+    # ── 4. Price Alerts ──
+    if not items_df.empty and 'item_normalized' in items_df.columns and 'unit_price' in items_df.columns:
+        # Compute running average and check latest price deviation
+        alerts = []
+        for item_name, grp in items_df.groupby('item_normalized'):
+            grp = grp.sort_values('order_date')
+            if len(grp) < 2:
+                continue
+            avg_p = grp['unit_price'].mean()
+            last_p = grp['unit_price'].iloc[-1]
+            if avg_p == 0:
+                continue
+            pct = (last_p - avg_p) / avg_p * 100
+            if abs(pct) > 10:
+                alerts.append({
+                    'item': item_name,
+                    'avg_price': avg_p,
+                    'last_price': last_p,
+                    'pct_change': pct,
+                    'last_date': grp['order_date'].iloc[-1],
+                    'store': grp['store'].iloc[-1] if 'store' in grp.columns else '',
+                })
+
+        if alerts:
+            alerts_df = pd.DataFrame(alerts).sort_values('pct_change', key=abs, ascending=False)
+            st.markdown('<div class="section-header">🚨 Price Alerts (>10% deviation from avg)</div>', unsafe_allow_html=True)
+            alert_html = '<table class="tx-table"><thead><tr><th>Item</th><th>Store</th><th>Avg Price</th><th>Last Price</th><th>Change</th><th>Date</th></tr></thead><tbody>'
+            for _, row in alerts_df.iterrows():
+                pct = row['pct_change']
+                color = '#fb7185' if pct > 0 else '#34d399'
+                icon = '▲' if pct > 0 else '▼'
+                date_str = row['last_date'].strftime('%b %d') if pd.notna(row['last_date']) else ''
+                alert_html += f'<tr><td style="font-weight:600;">{row["item"]}</td><td>{row["store"]}</td><td>${row["avg_price"]:.2f}</td><td style="color:{color};font-weight:700;">${row["last_price"]:.2f}</td><td style="color:{color};font-weight:700;">{icon} {abs(pct):.0f}%</td><td>{date_str}</td></tr>'
+            alert_html += '</tbody></table>'
+            st.markdown(alert_html, unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="section-header">🚨 Price Alerts</div>', unsafe_allow_html=True)
+            st.markdown('<p style="color:#64748b;font-size:13px;">All items within 10% of their running average. No alerts.</p>', unsafe_allow_html=True)
+
+    # ── 5. Actionable Insights ──
+    _render_grocery_insights(items_df, orders_df)
+
+
+def _render_grocery_insights(items_df, orders_df):
+    """Auto-generate actionable insights from grocery data."""
+    if items_df.empty or orders_df.empty:
+        return
+
+    insights = []
+    icon_map = {'alert': '🔴', 'savings': '💰', 'info': '📊', 'tip': '💡', 'good': '✅'}
+
+    # --- Monthly spend estimate ---
+    date_range = (orders_df['order_date'].max() - orders_df['order_date'].min()).days
+    if date_range > 0:
+        months = max(date_range / 30.44, 1)
+        monthly = orders_df['total'].sum() / months
+        insights.append(('info', f"Monthly grocery spend: **${monthly:,.0f}/mo** (${orders_df['total'].sum():,.0f} over {len(orders_df)} orders)"))
+
+    # --- Category breakdown insight (top 3) ---
+    if 'category' in items_df.columns:
+        cat_spend = items_df.groupby('category')['line_total'].sum().sort_values(ascending=False)
+        total_spend = cat_spend.sum()
+        if total_spend > 0:
+            top3 = cat_spend.head(3)
+            parts = [f"**{cat}** {val/total_spend*100:.0f}%" for cat, val in top3.items()]
+            insights.append(('info', f"Top spending categories: {', '.join(parts)}"))
+
+    # --- Snacks + Beverages percentage ---
+    if 'category' in items_df.columns:
+        snack_bev = items_df[items_df['category'].isin(['Snacks', 'Beverages'])]['line_total'].sum()
+        total_spend = items_df['line_total'].sum()
+        if total_spend > 0:
+            pct = snack_bev / total_spend * 100
+            if pct > 15:
+                insights.append(('tip', f"Snacks + Beverages = **{pct:.0f}%** of grocery spend (${snack_bev:,.0f} YTD). This is your easiest lever for quick savings."))
+
+    # --- Biggest price increases (items bought 3+ times) ---
+    price_jumps = []
+    for name, grp in items_df.groupby('item_normalized'):
+        grp = grp.sort_values('order_date')
+        if len(grp) < 3:
+            continue
+        first_p = grp['unit_price'].iloc[0]
+        last_p = grp['unit_price'].iloc[-1]
+        if first_p > 0.5:  # skip very cheap items
+            pct = (last_p - first_p) / first_p * 100
+            if pct > 20:
+                price_jumps.append((name, first_p, last_p, pct))
+    if price_jumps:
+        price_jumps.sort(key=lambda x: -x[3])
+        jump_parts = [f"**{n}** ${f:.2f}→${l:.2f} (+{p:.0f}%)" for n, f, l, p in price_jumps[:3]]
+        insights.append(('alert', f"Biggest price increases: {'; '.join(jump_parts)}. Consider alternatives or different stores."))
+
+    # --- Biggest price drops ---
+    price_drops = []
+    for name, grp in items_df.groupby('item_normalized'):
+        grp = grp.sort_values('order_date')
+        if len(grp) < 3:
+            continue
+        first_p = grp['unit_price'].iloc[0]
+        last_p = grp['unit_price'].iloc[-1]
+        if first_p > 0.5:
+            pct = (last_p - first_p) / first_p * 100
+            if pct < -20:
+                price_drops.append((name, first_p, last_p, pct))
+    if price_drops:
+        price_drops.sort(key=lambda x: x[3])
+        drop_parts = [f"**{n}** ${f:.2f}→${l:.2f} ({p:.0f}%)" for n, f, l, p in price_drops[:3]]
+        insights.append(('good', f"Prices dropping: {'; '.join(drop_parts)}. Good time to stock up."))
+
+    # --- High-frequency high-cost items ---
+    if 'item_normalized' in items_df.columns:
+        item_totals = items_df.groupby('item_normalized').agg(
+            total=('line_total', 'sum'), count=('order_date', 'count')
+        ).sort_values('total', ascending=False)
+        top_items = item_totals[item_totals['count'] >= 3].head(3)
+        if not top_items.empty:
+            parts = [f"**{n}** (${r['total']:.0f}, {int(r['count'])}x)" for n, r in top_items.iterrows()]
+            insights.append(('tip', f"Highest-spend repeat items: {', '.join(parts)}. Bulk buying or store-brand swaps here move the needle most."))
+
+    # --- Savings rate insight ---
+    if 'savings' in orders_df.columns and 'subtotal' in orders_df.columns:
+        avg_rate = (orders_df['savings'].sum() / orders_df['subtotal'].sum() * 100) if orders_df['subtotal'].sum() > 0 else 0
+        best_week = orders_df.loc[orders_df.apply(lambda r: r['savings']/r['subtotal']*100 if r['subtotal']>0 else 0, axis=1).idxmax()]
+        best_rate = best_week['savings'] / best_week['subtotal'] * 100 if best_week['subtotal'] > 0 else 0
+        worst_week = orders_df.loc[orders_df.apply(lambda r: r['savings']/r['subtotal']*100 if r['subtotal']>0 else 0, axis=1).idxmin()]
+        worst_rate = worst_week['savings'] / worst_week['subtotal'] * 100 if worst_week['subtotal'] > 0 else 0
+        insights.append(('savings', f"Average savings rate: **{avg_rate:.0f}%** (best: {best_rate:.0f}% on {best_week['order_date'].strftime('%b %d')}, worst: {worst_rate:.0f}% on {worst_week['order_date'].strftime('%b %d')}). Timing larger orders around Walmart Rollbacks could push this higher."))
+
+    # --- Latest order vs average ---
+    if len(orders_df) >= 3:
+        latest = orders_df.iloc[-1]
+        avg_prev = orders_df.iloc[:-1]['total'].mean()
+        diff_pct = (latest['total'] - avg_prev) / avg_prev * 100
+        if abs(diff_pct) > 15:
+            direction = "above" if diff_pct > 0 else "below"
+            color_word = "higher" if diff_pct > 0 else "lower"
+            insights.append(('alert' if diff_pct > 0 else 'good',
+                f"Latest order (${latest['total']:.0f}) was **{abs(diff_pct):.0f}% {direction}** your average (${avg_prev:.0f}). {'Stock-up week, or is the list growing?' if diff_pct > 0 else 'Nice — leaner week.'}"))
+
+    # --- Render insights ---
+    if insights:
+        st.markdown('<div class="section-header">💡 Actionable Insights</div>', unsafe_allow_html=True)
+        insight_html = '<div style="background:rgba(30,41,59,0.5);border:1px solid rgba(71,85,105,0.4);border-radius:12px;padding:16px 20px;margin-top:8px;">'
+        for kind, text in insights:
+            icon = icon_map.get(kind, '📌')
+            insight_html += f'<div style="padding:8px 0;border-bottom:1px solid rgba(71,85,105,0.2);font-size:13px;color:#cbd5e1;line-height:1.6;">{icon} {text}</div>'
+        # Remove last border
+        insight_html = insight_html[:-len('</div>')] + '</div>'
+        insight_html = insight_html.rsplit('border-bottom:1px solid rgba(71,85,105,0.2);', 1)
+        insight_html = 'border-bottom:none;'.join(insight_html)
+        insight_html += '</div>'
+        st.markdown(insight_html, unsafe_allow_html=True)
 
 
 # ========================
@@ -1604,7 +1979,7 @@ def run_production(config):
     if "view_mode" not in st.session_state:
         st.session_state["view_mode"] = "daily"
 
-    toggle_col1, tc_daily, tc_invest, toggle_col4 = st.columns([2, 1, 1, 2])
+    toggle_col1, tc_daily, tc_invest, tc_grocery, toggle_col5 = st.columns([1.5, 1, 1, 1, 1.5])
     with tc_daily:
         if st.button("💵 Daily Finances", key="btn_daily", use_container_width=True,
                       type="primary" if st.session_state["view_mode"] == "daily" else "secondary"):
@@ -1615,10 +1990,29 @@ def run_production(config):
                       type="primary" if st.session_state["view_mode"] == "investments" else "secondary"):
             st.session_state["view_mode"] = "investments"
             st.rerun()
+    with tc_grocery:
+        if st.button("🛒 Groceries", key="btn_grocery", use_container_width=True,
+                      type="primary" if st.session_state["view_mode"] == "groceries" else "secondary"):
+            st.session_state["view_mode"] = "groceries"
+            st.rerun()
 
     if st.session_state["view_mode"] == "investments":
         render_production_investments_view(data, manual)
         st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#475569;font-size:11px;letter-spacing:1px;">{family_name.upper()} &nbsp;•&nbsp; Data synced via Finta &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
+        return
+
+    if st.session_state["view_mode"] == "groceries":
+        grocery_data = load_grocery_data()
+        if grocery_data is None:
+            demo_grocery = load_demo_grocery_data()
+            if demo_grocery:
+                st.markdown('<div class="demo-badge"><span>⚡ Demo Mode — Sample Grocery Data</span></div>', unsafe_allow_html=True)
+                render_groceries_view(demo_grocery, is_demo=True)
+            else:
+                st.warning("Grocery sheet not configured. Add `grocery_sheet_id` to config.yaml.")
+        else:
+            render_groceries_view(grocery_data)
+        st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#475569;font-size:11px;letter-spacing:1px;">{family_name.upper()} &nbsp;•&nbsp; Grocery Price Tracker &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
         return
 
     # Period selector
@@ -1913,7 +2307,7 @@ def main():
     if "view_mode" not in st.session_state:
         st.session_state["view_mode"] = "daily"
 
-    toggle_col1, tc_daily, tc_invest, toggle_col4 = st.columns([2, 1, 1, 2])
+    toggle_col1, tc_daily, tc_invest, tc_grocery, toggle_col5 = st.columns([1.5, 1, 1, 1, 1.5])
     with tc_daily:
         if st.button(
             "💵 Daily Finances",
@@ -1932,9 +2326,28 @@ def main():
         ):
             st.session_state["view_mode"] = "investments"
             st.rerun()
+    with tc_grocery:
+        if st.button(
+            "🛒 Groceries",
+            key="btn_grocery",
+            use_container_width=True,
+            type="primary" if st.session_state["view_mode"] == "groceries" else "secondary"
+        ):
+            st.session_state["view_mode"] = "groceries"
+            st.rerun()
 
     if st.session_state["view_mode"] == "investments":
         render_investments_view()
+        st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#475569;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
+        return
+
+    if st.session_state["view_mode"] == "groceries":
+        demo_grocery = load_demo_grocery_data()
+        if demo_grocery:
+            st.markdown('<div class="demo-badge"><span>⚡ Demo Mode — Sample Grocery Data</span></div>', unsafe_allow_html=True)
+            render_groceries_view(demo_grocery, is_demo=True)
+        else:
+            st.warning("No grocery data available. Place sample_grocery_data.json alongside app.py.")
         st.markdown(f'<div style="text-align:center;margin-top:48px;padding:20px;color:#475569;font-size:11px;letter-spacing:1px;">FAMILY BUDGET DASHBOARD &nbsp;•&nbsp; Built with Streamlit + Plotly &nbsp;&bull;&nbsp; v{APP_VERSION}</div>', unsafe_allow_html=True)
         return
 
