@@ -2,8 +2,8 @@
 
 This guide comes in two flavors. Pick the one that fits:
 
-- **[🐣 I'm New to This](#-complete-beginner-guide)** -- Never used GitHub, Google Cloud, or deployed a web app? Start here. Every click is explained.
-- **[⚡ Just Give Me the Steps](#-experienced-user-guide)** -- You know your way around GitHub, APIs, and config files. Here's the short version.
+- 🐣 **[I'm New to This](#-complete-beginner-guide)** -- Never used GitHub, Google Cloud, or deployed a web app? Start here. Every click is explained.
+- ⚡ **[Just Give Me the Steps](#-experienced-user-guide)** -- You know your way around GitHub, APIs, and config files. Here's the short version.
 
 Throughout both guides, look for 💡 **AI Tips** -- places where tools like [ChatGPT](https://chat.openai.com), [Claude](https://claude.ai), [Google Gemini](https://gemini.google.com), or [Microsoft Copilot](https://copilot.microsoft.com) can do the tedious work for you. If you get stuck on ANY step, paste that section into an AI assistant and ask it to walk you through it. That's what they're for.
 
