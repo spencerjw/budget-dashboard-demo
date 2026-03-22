@@ -7,7 +7,8 @@
 3. Use the sidebar to switch between **Demo Test Data** and **Try with My Data**
 4. In "Try with My Data" mode, enter your own income, bills, and accounts
 5. Upload bank transaction CSVs for spending breakdowns
-6. Toggle between **Daily Finances** and **Investments** views at the top
+6. Toggle between **Daily Finances**, **Investments**, and **Groceries** views at the top
+7. The Groceries tab shows sample grocery data with price tracking, category breakdowns, and actionable insights
 
 The sidebar controls exist because the demo isn't connected to real bank accounts. In a real setup, everything syncs automatically and the sidebar goes away entirely.
 
@@ -137,6 +138,55 @@ fund_ticker_map:
 
 The dashboard will look up public NAVs via Yahoo Finance and scale them proportionally to match your actual account balance. The percentages are accurate; dollar values are estimates based on public NAVs.
 
+## Step 7: (Optional) Grocery Price Tracker
+
+Track your grocery spending over time by connecting a Google Sheet with your order data.
+
+### Setting Up Your Grocery Sheet
+
+Create a Google Sheet with two tabs:
+
+**Items tab** -- one row per line item from each grocery order:
+| Column | Example | Description |
+|--------|---------|-------------|
+| `order_date` | 2026-01-03 | Date of the order |
+| `store` | Walmart | Store name |
+| `item_name_raw` | Great Value Frozen Broccoli Florets, 12 oz | Exact item name from receipt |
+| `item_normalized` | frozen broccoli florets | Canonical name for matching across orders |
+| `brand` | Great Value | Brand name (or empty) |
+| `category` | Frozen | Produce, Meat, Dairy, Frozen, Snacks, Beverages, Pantry, Household, or Health/Beauty |
+| `qty` | 3 | Quantity purchased |
+| `size_value` | 12 | Numeric size |
+| `size_unit` | oz | oz, lb, fl oz, count, each, pack |
+| `line_total` | 3.48 | Total price for this line |
+| `unit_price` | 1.16 | Price per unit (line_total / qty) |
+| `price_per_oz` | 0.097 | Normalized price per oz (if applicable) |
+| `price_per_lb` | 1.55 | Normalized price per lb (if applicable) |
+| `weight_adjusted` | FALSE | TRUE if produce/meat with variable weight |
+| `substitution` | FALSE | TRUE if store substituted the item |
+
+**Orders tab** -- one row per weekly order:
+| Column | Example |
+|--------|---------|
+| `order_date` | 2026-01-03 |
+| `store` | Walmart |
+| `subtotal` | 341.94 |
+| `savings` | 22.45 |
+| `tax` | 3.84 |
+| `total` | 323.33 |
+| `item_count` | 47 |
+
+### Connecting to Your Dashboard
+
+1. Share the Google Sheet with your service account email (same one used for Finta)
+2. Add `grocery_sheet_id` to your Streamlit Secrets or `config.yaml`:
+   ```toml
+   grocery_sheet_id = "your-grocery-sheet-id-from-url"
+   ```
+3. The Groceries tab will show your real data with weekly spend trends, category breakdowns, repeat item tracking, price alerts, and auto-generated actionable insights.
+
+**Tip:** You can populate this sheet manually, or build a parser script to extract data from store order PDFs/receipts. The dashboard reads whatever is in the sheet.
+
 ## What Changes in Production Mode
 
 | Feature | Demo | Production |
@@ -145,6 +195,7 @@ The dashboard will look up public NAVs via Yahoo Finance and scale them proporti
 | Data source | Fake data / manual CSV | Finta auto-sync |
 | Bills & income | Enter in sidebar | From config.yaml |
 | Investments | Sample data | Real holdings + NAV lookups |
+| Groceries | Sample data (8 weeks) | Your real grocery orders from Google Sheet |
 | Refresh | Manual | Every 15 minutes |
 | Setup time | 0 minutes | ~15 minutes |
 
