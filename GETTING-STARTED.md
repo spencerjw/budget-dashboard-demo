@@ -6,7 +6,7 @@
 2. You'll see sample data for a fictional family (the "Anderson Family Budget")
 3. Use the sidebar to switch between **Demo Test Data** and **Try with My Data**
 4. In "Try with My Data" mode, enter your own income, bills, and accounts
-5. Upload bank transaction CSVs for spending breakdowns
+5. Upload bank transaction CSVs for spending breakdowns (most banks offer CSV export under statements or transaction history — if yours doesn't, screenshot your transactions and ask ChatGPT, Claude, or Gemini to convert them into a CSV)
 6. Toggle between **Daily Finances**, **Investments**, and **Groceries** views at the top
 7. The Groceries tab shows sample grocery data with price tracking, category breakdowns, and actionable insights
 
@@ -185,7 +185,11 @@ Create a Google Sheet with two tabs:
    ```
 3. The Groceries tab will show your real data with weekly spend trends, category breakdowns, repeat item tracking, price alerts, and auto-generated actionable insights.
 
-**Tip:** You can populate this sheet manually, or build a parser script to extract data from store order PDFs/receipts. The dashboard reads whatever is in the sheet.
+**💡 AI Tip:** Don't type this data by hand. Most online grocery services (Walmart, Instacart, Amazon Fresh, H-E-B, etc.) let you view or export your order history. Screenshot it, save the page as a PDF, or copy the text, then feed it into an AI assistant like ChatGPT, Claude, or Google Gemini with a prompt like:
+
+> "Extract every item from this grocery order into a CSV with columns: order_date, store, item_name_raw, item_normalized, brand, category, qty, size_value, size_unit, line_total, unit_price. Also extract the order total, subtotal, savings, and tax."
+
+One prompt can turn months of receipts into a ready-to-import spreadsheet in minutes. You can paste the CSV directly into Google Sheets.
 
 ## What Changes in Production Mode
 

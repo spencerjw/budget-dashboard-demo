@@ -129,6 +129,8 @@ The Grocery Price Tracker works with any Google Sheet containing your grocery or
 
 The dashboard reads the sheet on each page load and auto-generates insights including price trend analysis, category breakdowns, and actionable recommendations.
 
+**💡 AI Tip:** Don't build your grocery sheet by hand. Most online grocery services (Walmart, Instacart, Amazon Fresh, H-E-B, etc.) let you export or screenshot your order history. Feed those exports, PDFs, or screenshots into an AI tool like ChatGPT, Claude, or Google Gemini and ask it to extract the items into a CSV matching the schema above. One prompt can turn months of receipts into structured data in minutes.
+
 ## Security
 
 - **Demo mode**: Everything stays in your browser via `localStorage`. No server, no cookies, no tracking.
