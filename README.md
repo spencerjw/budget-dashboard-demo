@@ -4,6 +4,12 @@ A dark-themed personal finance dashboard built with Streamlit and Plotly. Works 
 
 **🚀 [Live Demo](https://budget-dashboard-demo-8nj84cznyyk33y7pacr4ug.streamlit.app/)** -- Try it now with sample data
 
+## Built for the AI Era
+
+This dashboard is designed to work hand-in-hand with AI tools. You don't need to be a developer or a spreadsheet wizard to get your financial data organized. Throughout this guide, you'll see 💡 **AI Tips** showing where tools like [ChatGPT](https://chat.openai.com), [Claude](https://claude.ai), [Google Gemini](https://gemini.google.com), or [Microsoft Copilot](https://copilot.microsoft.com) can do the heavy lifting for you -- turning messy bank statements into clean CSVs, extracting grocery receipts into structured data, or helping you categorize months of transactions in seconds.
+
+If you've never used AI for personal finance tasks, this is a great place to start. The data prep that used to take hours now takes minutes.
+
 ## Two Modes, One Codebase
 
 ### Demo Mode (Default)
@@ -58,10 +64,12 @@ Fork the repo, add your config, and get a fully automated dashboard synced to yo
 
 ## Quick Start (Production)
 
-Setup takes about 15 minutes.
+Setup takes about 15 minutes. If any step feels unfamiliar, paste these instructions into an AI assistant and ask it to walk you through it -- that's what they're for.
 
 ### 1. Fork this repo
 Click **Fork** on GitHub. Clone your fork locally.
+
+💡 **AI Tip:** New to GitHub? Ask an AI assistant: *"Walk me through forking a GitHub repo and cloning it to my computer."* It'll give you step-by-step instructions for your operating system.
 
 ### 2. Set up Finta.io
 - Create an account at [finta.io](https://finta.io) ($5.83/mo)
@@ -83,11 +91,15 @@ Edit `config.yaml` with your:
 
 `config.yaml` is gitignored -- your financial details never touch GitHub.
 
+💡 **AI Tip:** Not sure how to organize your fixed expenses or what counts as a "fixed" vs "variable" expense? Paste your last 3 months of bank statements into ChatGPT or Claude and ask: *"Identify my recurring monthly bills and categorize them. Format them as YAML like this: [paste the config.example.yaml format]."* It'll build your config for you.
+
 ### 4. Set up Google Service Account
 - Create a service account in Google Cloud Console
 - Download the JSON key
 - Share your Finta Google Sheet with the service account email (read-only)
 - Reference the key file in `config.yaml` (local) or add it to Streamlit Secrets (cloud)
+
+💡 **AI Tip:** Google Cloud Console can be intimidating if you haven't used it before. Ask an AI assistant: *"Walk me through creating a Google Cloud service account with Sheets API access, step by step with screenshots descriptions."* It'll guide you through every click.
 
 ### 5. Deploy to Streamlit Cloud
 - Connect your forked repo at [share.streamlit.io](https://share.streamlit.io)
@@ -95,6 +107,8 @@ Edit `config.yaml` with your:
   - Paste your `config.yaml` contents
   - Add `[gcp_service_account]` section with your service account JSON
 - Deploy. Your dashboard auto-syncs with Finta every 15 minutes.
+
+💡 **AI Tip:** Streamlit Secrets use TOML format, which is slightly different from YAML. If you're having trouble converting your config, paste your `config.yaml` into an AI tool and ask: *"Convert this YAML to Streamlit TOML secrets format."*
 
 ## Configuration Reference
 
@@ -129,7 +143,9 @@ The Grocery Price Tracker works with any Google Sheet containing your grocery or
 
 The dashboard reads the sheet on each page load and auto-generates insights including price trend analysis, category breakdowns, and actionable recommendations.
 
-**💡 AI Tip:** Don't build your grocery sheet by hand. Most online grocery services (Walmart, Instacart, Amazon Fresh, H-E-B, etc.) let you export or screenshot your order history. Feed those exports, PDFs, or screenshots into an AI tool like ChatGPT, Claude, or Google Gemini and ask it to extract the items into a CSV matching the schema above. One prompt can turn months of receipts into structured data in minutes.
+💡 **AI Tip:** Don't build your grocery sheet by hand. Most online grocery services (Walmart, Instacart, Amazon Fresh, H-E-B, Kroger, etc.) let you export or screenshot your order history. Feed those exports, PDFs, or screenshots into an AI tool and ask it to extract the items into a CSV matching the schema above. One prompt can turn months of receipts into structured data in minutes. Example prompt:
+
+> *"Here's my Walmart order history. Extract every item into a CSV with columns: order_date, store, item_name_raw, item_normalized, brand, category, qty, size_value, size_unit, line_total, unit_price. Normalize the item names (lowercase, no brand, no size info). Categorize each item as Produce, Meat, Dairy, Frozen, Snacks, Beverages, Pantry, Household, or Health/Beauty. Also create a separate summary CSV with: order_date, store, subtotal, savings, tax, total, item_count."*
 
 ## Security
 
@@ -137,6 +153,17 @@ The dashboard reads the sheet on each page load and auto-generates insights incl
 - **Production mode**: Your financial data lives in your Finta Google Sheet (your Google account). The dashboard reads it read-only via a service account. No data is stored in the app code.
 - **Config**: `config.yaml` and service account keys are gitignored. On Streamlit Cloud, use encrypted Secrets.
 - **Plaid**: SOC 2 Type II certified, bank-level encryption, used by major financial apps worldwide.
+
+## Troubleshooting
+
+Having issues? Before digging through docs, try pasting the error message into an AI assistant with context like *"I'm setting up a Streamlit dashboard that connects to Google Sheets via a service account. I'm getting this error: [error]."* AI tools are excellent at diagnosing config issues, permission errors, and deployment problems.
+
+Common issues:
+
+- **"Could not load Finta data"** -- Check that your Google Sheet is shared with the service account email and that the sheet ID is correct.
+- **Missing transactions** -- Finta syncs daily. New transactions may take up to 24 hours to appear.
+- **Grocery tab shows demo data in production** -- Make sure `grocery_sheet_id` is set in your secrets and the sheet is shared with the service account.
+- **401(k) shows no fund values** -- Add `fund_ticker_map` to your config. Without it, you'll see share counts but no dollar values per fund.
 
 ## Tech Stack
 
