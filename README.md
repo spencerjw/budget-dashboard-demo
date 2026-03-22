@@ -2,7 +2,7 @@
 
 A dark-themed personal finance dashboard built with Streamlit and Plotly. Works as a live demo with sample data, or connect your real bank accounts for a fully automated personal dashboard.
 
-**[🚀 Live Demo](https://budget-dashboard-demo-8nj84cznyyk33y7pacr4ug.streamlit.app/)** -- Try it now with sample data
+**🚀 [Live Demo](https://budget-dashboard-demo-8nj84cznyyk33y7pacr4ug.streamlit.app/)** -- Try it now with sample data
 
 ## Two Modes, One Codebase
 
