@@ -134,6 +134,7 @@ The Grocery Price Tracker works with any Google Sheet containing your grocery or
 
 1. Create a Google Sheet with two tabs:
    - **Items** -- Columns: `order_date`, `store`, `item_name_raw`, `item_normalized`, `brand`, `category`, `qty`, `size_value`, `size_unit`, `line_total`, `unit_price`, `price_per_oz`, `price_per_lb`, `weight_adjusted`, `substitution`
+   - **Important:** `unit_price` must be the price per individual item, not per package. For count items (eggs, protein bars, soda cans), divide the line total by both quantity AND count. Example: 18-count eggs at $5.84 = $0.32/egg, not $5.84. For weight items (oz, lb), `unit_price` is price per package and `price_per_oz`/`price_per_lb` handle the normalization.
    - **Orders** -- Columns: `order_date`, `store`, `subtotal`, `savings`, `tax`, `total`, `item_count`
 2. Share the sheet with your Google service account email (the same one used for Finta)
 3. Add `grocery_sheet_id` to your `config.yaml` or Streamlit Secrets:
@@ -145,7 +146,7 @@ The dashboard reads the sheet on each page load and auto-generates insights incl
 
 💡 **AI Tip:** Don't build your grocery sheet by hand. Most online grocery services (Walmart, Instacart, Amazon Fresh, H-E-B, Kroger, etc.) let you export or screenshot your order history. Feed those exports, PDFs, or screenshots into an AI tool and ask it to extract the items into a CSV matching the schema above. One prompt can turn months of receipts into structured data in minutes. Example prompt:
 
-> *"Here's my Walmart order history. Extract every item into a CSV with columns: order_date, store, item_name_raw, item_normalized, brand, category, qty, size_value, size_unit, line_total, unit_price. Normalize the item names (lowercase, no brand, no size info). Categorize each item as Produce, Meat, Dairy, Frozen, Snacks, Beverages, Pantry, Household, or Health/Beauty. Also create a separate summary CSV with: order_date, store, subtotal, savings, tax, total, item_count."*
+> *"Here's my Walmart order history. Extract every item into a CSV with columns: order_date, store, item_name_raw, item_normalized, brand, category, qty, size_value, size_unit, line_total, unit_price. For unit_price: if the item is sold by count (eggs, cans, bars), calculate price per individual item (line_total divided by qty AND count). For weight items (oz, lb), unit_price is just line_total divided by qty. Normalize the item names (lowercase, no brand, no size info). Categorize each item as Produce, Meat, Dairy, Frozen, Snacks, Beverages, Pantry, Household, or Health/Beauty. Also create a separate summary CSV with: order_date, store, subtotal, savings, tax, total, item_count."*
 
 ## Security
 
